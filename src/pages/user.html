@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Movie Review - User Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link href="../../css/styles.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="../index.html">Movie Review</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <button id="logout-btn" class="btn btn-danger">Logout</button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container my-5">
+        <h1 class="display-4 text-center mb-4">User Dashboard</h1>
+        <section class="mb-5">
+            <h2 class="h3 mb-3">Explore Movies</h2>
+            <div id="movies-list" class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-4"></div>
+        </section>
+        <section>
+            <h2 class="h3 mb-3">Your Lists</h2>
+            <ul class="nav nav-tabs mb-3">
+                <li class="nav-item">
+                    <button class="nav-link active" id="watchlist-tab" data-list="watchlist">Watchlist</button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link" id="watched-tab" data-list="watched">Watched</button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link" id="dropped-tab" data-list="dropped">Dropped</button>
+                </li>
+            </ul>
+            <div id="lists-content" class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-4"></div>
+        </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <script src="../../js/utils.js"></script>
+    <script src="../../js/auth.js"></script>
+    <script src="../../js/movies.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            fetchMoviesUser();
+            setupLogout();
+            setupLists();
+            checkUserRoleAndRedirect();
+        });
+
+        async function fetchMoviesUser() {
+            const moviesList = document.getElementById("movies-list");
+            try {
+                const response = await fetchWithAuth(`${BASE_URL}/movies`);
+                const data = await response.json();
+                if (data.status === "success") {
+                    renderMoviesUser(data.data);
+                } else {
+                    moviesList.innerHTML = '<p class="col text-center text-muted">Error fetching movies.</p>';
+                }
+            } catch (error) {
+                console.error("Fetch movies error:", error);
+                moviesList.innerHTML = '<p class="col text-center text-muted">Error fetching movies.</p>';
+            }
+        }
+
+        function renderMoviesUser(movies) {
+            const moviesList = document.getElementById("movies-list");
+            moviesList.innerHTML = "";
+            movies.forEach(movie => {
+                const movieCard = document.createElement("div");
+                movieCard.className = "col";
+                movieCard.innerHTML = `
+                    <div class="card movie-card h-100">
+                        <img src="${movie.imageUri || 'https://via.placeholder.com/300x300'}" class="card-img-top" alt="${movie.title}">
+                        <div class="card-body">
+                            <h5 class="card-title">${movie.title}</h5>
+                            <p class="card-text text-muted">${movie.description || "No description available"}</p>
+                            <p class="card-text"><small class="text-muted">Year: ${movie.releaseYear} | Genre: ${movie.genre || "N/A"}</small></p>
+                            <div class="mt-2">
+                                <button onclick="addToList(${movie.movieId}, 'watchlist')" class="btn btn-primary btn-sm me-1">Watchlist</button>
+                                <button onclick="addToList(${movie.movieId}, 'watched')" class="btn btn-success btn-sm me-1">Watched</button>
+                                <button onclick="addToList(${movie.movieId}, 'dropped')" class="btn btn-danger btn-sm">Dropped</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                moviesList.appendChild(movieCard);
+            });
+        }
+
+        function setupLists() {
+            const tabs = document.querySelectorAll(".nav-link");
+            tabs.forEach(tab => {
+                tab.addEventListener("click", (e) => {
+                    tabs.forEach(t => t.classList.remove("active"));
+                    e.target.classList.add("active");
+                    const listType = e.target.getAttribute("data-list");
+                    fetchList(listType);
+                });
+            });
+            fetchList("watchlist"); // Default tab
+        }
+
+        async function fetchList(listType) {
+            const listsContent = document.getElementById("lists-content");
+            try {
+                const response = await fetchWithAuth(`${BASE_URL}/lists?type=${listType}`);
+                const data = await response.json();
+                if (data.status === "success") {
+                    renderList(data.data, listType);
+                } else {
+                    listsContent.innerHTML = '<p class="col text-center text-muted">Error fetching list.</p>';
+                }
+            } catch (error) {
+                console.error("Fetch list error:", error);
+                listsContent.innerHTML = '<p class="col text-center text-muted">Error fetching list.</p>';
+            }
+        }
+
+        function renderList(movies, listType) {
+            const listsContent = document.getElementById("lists-content");
+            listsContent.innerHTML = "";
+            if (movies.length === 0) {
+                listsContent.innerHTML = `<p class="col text-center text-muted">No movies in your ${listType} yet.</p>`;
+                return;
+            }
+            movies.forEach(movie => {
+                const listItem = document.createElement("div");
+                listItem.className = "col";
+                listItem.innerHTML = `
+                    <div class="card movie-card h-100">
+                        <img src="${movie.imageUri || 'https://via.placeholder.com/300x300'}" class="card-img-top" alt="${movie.title}">
+                        <div class="card-body">
+                            <h5 class="card-title">${movie.title}</h5>
+                            <p class="card-text text-muted">${movie.description || "No description available"}</p>
+                            <p class="card-text"><small class="text-muted">Year: ${movie.releaseYear} | Genre: ${movie.genre || "N/A"}</small></p>
+                            <button onclick="removeFromList(${movie.movieId}, '${listType}')" class="btn btn-danger btn-sm mt-2">Remove</button>
+                        </div>
+                    </div>
+                `;
+                listsContent.appendChild(listItem);
+            });
+        }
+
+        async function addToList(movieId, listType) {
+            try {
+                const response = await fetchWithAuth(`${BASE_URL}/lists?movie_id=${movieId}&type=${listType}`, {
+                    method: "POST"
+                });
+                const data = await response.json();
+                if (data.status === "success") {
+                    fetchList(listType); // Refresh current list
+                }
+                alert(data.message);
+            } catch (error) {
+                console.error("Add to list error:", error);
+                alert("Failed to add to list.");
+            }
+        }
+
+        async function removeFromList(movieId, listType) {
+            try {
+                const response = await fetchWithAuth(`${BASE_URL}/lists?movie_id=${movieId}&type=${listType}`, {
+                    method: "DELETE"
+                });
+                const data = await response.json();
+                if (data.status === "success") {
+                    fetchList(listType); // Refresh current list
+                }
+                alert(data.message);
+            } catch (error) {
+                console.error("Remove from list error:", error);
+                alert("Failed to remove from list.");
+            }
+        }
+    </script>
+</body>
+</html>
