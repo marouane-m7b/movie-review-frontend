@@ -1,13 +1,13 @@
 {
-    "name": "movie-review-frontend",
-    "version": "1.0.0",
-    "description": "Frontend for Movie Review API with Bootstrap and pure CSS",
-    "scripts": {
-      "start": "npx serve ./src"
-    },
-    "author": "",
-    "license": "ISC",
-    "devDependencies": {
-      "serve": "^14.2.3"
-    }
+  "name": "movie-review-frontend",
+  "version": "1.0.0",
+  "description": "Frontend for Movie Review API with Bootstrap and pure CSS",
+  "scripts": {
+    "start": "npx serve ./src"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "serve": "^14.2.3"
   }
+}

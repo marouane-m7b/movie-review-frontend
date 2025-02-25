@@ -48,6 +48,7 @@ async function showMovieDetails(movie) {
     const droppedBtn = document.getElementById("add-dropped");
     const reviewBtn = document.getElementById("add-review");
     const reviewsList = document.getElementById("reviews-list");
+    const reviewForm = document.getElementById("submit-review-form");
 
     title.textContent = movie.title;
     image.src = movie.imageUri || "https://via.placeholder.com/300x300";
@@ -56,32 +57,32 @@ async function showMovieDetails(movie) {
 
     const token = getToken();
     if (token) {
-        watchlistBtn.classList.add("btn-sm", "me-2");
-        watchedBtn.classList.add("btn-sm", "me-2");
-        droppedBtn.classList.add("btn-sm", "me-2");
-        reviewBtn.classList.add("btn-sm");
         watchlistBtn.onclick = () => addToList(movie.movieId, "watchlist");
         watchedBtn.onclick = () => addToList(movie.movieId, "watched");
         droppedBtn.onclick = () => addToList(movie.movieId, "dropped");
-        reviewBtn.onclick = () => alert("Review functionality coming soon!");
+        reviewBtn.onclick = () => {}; // Handled by Bootstrap collapse
+        setupReviewForm(movie.movieId); // Pass movieId only
     } else {
-        watchlistBtn.classList.add("btn-sm", "me-2");
-        watchedBtn.classList.add("btn-sm", "me-2");
-        droppedBtn.classList.add("btn-sm", "me-2");
-        reviewBtn.classList.add("btn-sm");
-        watchlistBtn.onclick = () => requireAuth(() => addToList(movie.movieId, "watchlist"));
-        watchedBtn.onclick = () => requireAuth(() => addToList(movie.movieId, "watched"));
-        droppedBtn.onclick = () => requireAuth(() => addToList(movie.movieId, "dropped"));
-        reviewBtn.onclick = () => requireAuth(() => alert("Review functionality coming soon!"));
+        watchlistBtn.onclick = () => requireAuth();
+        watchedBtn.onclick = () => requireAuth();
+        droppedBtn.onclick = () => requireAuth();
+        reviewBtn.onclick = () => requireAuth();
+        reviewForm.style.display = "none";
     }
 
+    await refreshReviews(movie.movieId, reviewsList); // Fetch and render reviews initially
+    detailsModal.show();
+}
+
+async function refreshReviews(movieId, reviewsList) {
     try {
-        const response = await fetch(`${BASE_URL}/reviews?movie_id=${movie.movieId}`, {
+        const response = await fetch(`${BASE_URL}/reviews?movie_id=${movieId}`, {
             credentials: "include"
         });
         const data = await response.json();
-        if (Array.isArray(data)) {
-            renderReviews(data);
+        console.log("Reviews fetch:", data); // Debug
+        if (data.status === "success" && Array.isArray(data.data)) {
+            renderReviews(data.data, reviewsList);
         } else {
             reviewsList.innerHTML = '<p class="text-muted">No reviews yet.</p>';
         }
@@ -89,13 +90,14 @@ async function showMovieDetails(movie) {
         console.error("Fetch reviews error:", error);
         reviewsList.innerHTML = '<p class="text-muted">Error loading reviews.</p>';
     }
-
-    detailsModal.show();
 }
 
-function renderReviews(reviews) {
-    const reviewsList = document.getElementById("reviews-list");
+function renderReviews(reviews, reviewsList) {
     reviewsList.innerHTML = "<h6>Reviews:</h6>";
+    if (!reviews || reviews.length === 0) {
+        reviewsList.innerHTML += '<p class="text-muted">No reviews yet.</p>';
+        return;
+    }
     reviews.forEach(review => {
         const reviewItem = document.createElement("div");
         reviewItem.className = "border-top pt-2 mt-2";
@@ -108,15 +110,9 @@ function renderReviews(reviews) {
     });
 }
 
-function requireAuth(callback) {
-    const token = getToken();
-    if (!token) {
-        alert("Please login or signup to perform this action.");
-        const authModal = new bootstrap.Modal(document.getElementById("auth-modal"));
-        authModal.show();
-    } else {
-        callback();
-    }
+function requireAuth() {
+    const authModal = new bootstrap.Modal(document.getElementById("auth-modal"));
+    authModal.show();
 }
 
 async function addToList(movieId, listType) {
@@ -130,4 +126,39 @@ async function addToList(movieId, listType) {
         console.error("Add to list error:", error);
         alert("Failed to add to list.");
     }
+}
+
+async function setupReviewForm(movieId) {
+    const reviewForm = document.getElementById("submit-review-form");
+    const reviewsList = document.getElementById("reviews-list");
+
+    // Remove existing listeners to prevent duplicates
+    const newForm = reviewForm.cloneNode(true);
+    reviewForm.parentNode.replaceChild(newForm, reviewForm);
+
+    newForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const rating = document.getElementById("review-rating").value;
+        const comment = document.getElementById("review-comment").value;
+
+        try {
+            const response = await fetchWithAuth(`${BASE_URL}/reviews`, {
+                method: "POST",
+                body: `movie_id=${encodeURIComponent(movieId)}&rating=${encodeURIComponent(rating)}&comment=${encodeURIComponent(comment)}`
+            });
+            const data = await response.json();
+            console.log("Review submission response:", data);
+            if (data.status === "success") {
+                alert("Review submitted successfully!");
+                await refreshReviews(movieId, reviewsList); // Refresh reviews after submission
+                newForm.reset();
+                document.getElementById("review-form").classList.remove("show");
+            } else {
+                alert(data.message || "Failed to submit review.");
+            }
+        } catch (error) {
+            console.error("Submit review error:", error);
+            alert("Failed to submit review.");
+        }
+    });
 }

@@ -142,7 +142,7 @@ function renderMovies(movies) {
         movieCard.className = "col";
         movieCard.innerHTML = `
             <div class="card movie-card h-100">
-                <img src="${movie.imageUri || 'https://via.placeholder.com/300x300'}" class="card-img-top" alt="${movie.title}">
+                <img src="${movie.imageUri}" class="card-img-top" alt="${movie.title}">
                 <div class="card-body">
                     <h5 class="card-title">${movie.title}</h5>
                     <p class="card-text text-muted">${movie.description || "No description available"}</p>

@@ -6,26 +6,22 @@ function setupAuthModal() {
     const authTitle = document.getElementById("auth-modal-title");
     const authSubmit = document.getElementById("auth-submit");
     const toggleAuth = document.getElementById("toggle-auth");
-    const emailField = document.getElementById("email-field");
+    const emailField = document.getElementById("auth-email-field");
     const csrfTokenInput = document.getElementById("csrf-token");
 
     let isLoginMode = true;
 
-    if (loginBtn) {
-        loginBtn.addEventListener("click", () => {
-            isLoginMode = true;
-            updateAuthModal();
-            fetchCsrfToken().then(() => authModal.show());
-        });
-    }
+    loginBtn.addEventListener("click", () => {
+        isLoginMode = true;
+        updateAuthModal();
+        fetchCsrfToken().then(() => authModal.show());
+    });
 
-    if (signupBtn) {
-        signupBtn.addEventListener("click", () => {
-            isLoginMode = false;
-            updateAuthModal();
-            fetchCsrfToken().then(() => authModal.show());
-        });
-    }
+    signupBtn.addEventListener("click", () => {
+        isLoginMode = false;
+        updateAuthModal();
+        fetchCsrfToken().then(() => authModal.show());
+    });
 
     toggleAuth.addEventListener("click", (e) => {
         e.preventDefault();
@@ -35,9 +31,9 @@ function setupAuthModal() {
 
     authForm.addEventListener("submit", async (e) => {
         e.preventDefault();
-        const username = document.getElementById("username").value;
-        const password = document.getElementById("password").value;
-        const email = document.getElementById("email").value;
+        const username = document.getElementById("auth-username").value;
+        const password = document.getElementById("auth-password").value;
+        const email = document.getElementById("auth-email").value;
         const csrfToken = csrfTokenInput.value;
 
         const url = isLoginMode ? `${BASE_URL}/login` : `${BASE_URL}/register`;
@@ -53,18 +49,23 @@ function setupAuthModal() {
                 credentials: "include"
             });
             const data = await response.json();
-            if (data.status === "success" || (data.message && data.message.includes("successful"))) {
+            console.log("Auth response:", data);
+            if (data.status === "success") {
                 if (isLoginMode) {
-                    setToken(data.token);
+                    const token = data.token;
+                    console.log("Token from response:", token);
+                    setToken(token);
+                    console.log("Token in localStorage after set:", getToken());
                     authModal.hide();
-                    checkUserRoleAndRedirect();
+                    await checkUserRoleAndRedirect();
+                    console.log("Redirect should have happened");
                 } else {
                     alert("Signup successful! Please login.");
                     isLoginMode = true;
                     updateAuthModal();
                 }
             } else {
-                alert(data.message);
+                alert(data.message || "Authentication failed.");
             }
         } catch (error) {
             console.error(`${isLoginMode ? "Login" : "Signup"} error:`, error);
@@ -86,6 +87,7 @@ function setupAuthModal() {
             });
             const data = await response.json();
             csrfTokenInput.value = data.csrfToken;
+            console.log("CSRF token fetched:", data.csrfToken);
         } catch (error) {
             console.error("Error fetching CSRF token:", error);
         }
@@ -94,7 +96,10 @@ function setupAuthModal() {
 
 async function checkUserRoleAndRedirect() {
     const token = getToken();
-    if (!token) return;
+    if (!token) {
+        console.log("No token found, staying on index.");
+        return;
+    }
 
     try {
         const response = await fetch(`${BASE_URL}/profile`, {
@@ -102,44 +107,50 @@ async function checkUserRoleAndRedirect() {
             credentials: "include"
         });
         const data = await response.json();
+        console.log("Profile response:", data);
         if (data.status === "success") {
-            if (data.data.isAdmin) {
-                window.location.href = "pages/admin.html"; // Correct path from src/
-            } else {
-                window.location.href = "pages/user.html"; // Correct path from src/
-            }
+            const redirectUrl = data.data.isAdmin ? "/pages/admin.html" : "/pages/user.html";
+            console.log("Redirecting to:", redirectUrl);
+            window.location.href = redirectUrl;
         } else {
+            console.log("Profile fetch failed, clearing token");
             clearToken();
-            window.location.href = "index.html"; // Back to landing if profile fails
+            window.location.href = "/index.html";
         }
     } catch (error) {
         console.error("Error checking role:", error);
         clearToken();
-        window.location.href = "index.html"; // Fallback
+        window.location.href = "/index.html";
     }
 }
 
 function setupLogout() {
     const logoutBtn = document.getElementById("logout-btn");
-    if (!logoutBtn) return;
+    if (!logoutBtn) {
+        console.log("Logout button not found on this page."); // Debug
+        return;
+    }
 
     logoutBtn.addEventListener("click", async () => {
+        console.log("Logout button clicked"); // Debug
         try {
             const response = await fetchWithAuth(`${BASE_URL}/logout`, {
                 method: "POST"
             });
             const data = await response.json();
+            console.log("Logout response:", data); // Debug
             if (data.status === "success") {
                 clearToken();
-                window.location.href = "../index.html"; // Correct path from pages/
+                console.log("Token cleared, redirecting to index"); // Debug
+                window.location.href = "/index.html"; // Absolute path
             } else {
-                alert(data.message);
+                alert(data.message || "Logout failed.");
             }
         } catch (error) {
             console.error("Logout error:", error);
             alert("Failed to logout.");
             clearToken();
-            window.location.href = "../index.html"; // Fallback
+            window.location.href = "/index.html";
         }
     });
 }
