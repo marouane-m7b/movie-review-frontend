@@ -16,7 +16,7 @@
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
+                <ul class="navbar-nav ms-auto d-none d-lg-flex">
                     <li class="nav-item">
                         <button id="login-btn" class="btn btn-primary me-2"><i class="fas fa-sign-in-alt"></i> Login</button>
                     </li>
@@ -24,21 +24,62 @@
                         <button id="signup-btn" class="btn btn-outline-primary"><i class="fas fa-user-plus"></i> Signup</button>
                     </li>
                 </ul>
+                <button class="btn btn-primary d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebar"><i class="fas fa-bars"></i></button>
             </div>
         </div>
     </nav>
 
+    <div class="offcanvas offcanvas-start" id="sidebar">
+        <div class="offcanvas-header">
+            <h5 class="offcanvas-title">Menu</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+        </div>
+        <div class="offcanvas-body">
+            <ul class="nav flex-column">
+                <li class="nav-item"><button id="login-btn-mobile" class="nav-link btn btn-primary text-start"><i class="fas fa-sign-in-alt"></i> Login</button></li>
+                <li class="nav-item"><button id="signup-btn-mobile" class="nav-link btn btn-outline-primary text-start"><i class="fas fa-user-plus"></i> Signup</button></li>
+            </ul>
+        </div>
+    </div>
+
     <main class="container my-5">
+        <div id="movie-carousel" class="carousel slide mb-5" data-bs-ride="carousel">
+            <div class="carousel-inner" id="carousel-items"></div>
+            <button class="carousel-control-prev" type="button" data-bs-target="#movie-carousel" data-bs-slide="prev">
+                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#movie-carousel" data-bs-slide="next">
+                <span class="carousel-control-next-icon" aria-hidden="true"></span>
+            </button>
+        </div>
         <h1 class="display-4 text-center mb-5 fw-bold">Discover Movies</h1>
-        <div class="row mb-4">
-            <div class="col-md-6 mx-auto">
+        <div class="row mb-4 align-items-center">
+            <div class="col-md-6">
                 <form id="search-form" class="position-relative">
                     <div class="input-group">
                         <input type="text" id="search-input" class="form-control" placeholder="Search movies by title or genre..." required>
                         <button type="button" id="clear-search" class="btn btn-link text-muted position-absolute end-0 top-50 translate-middle-y" style="z-index: 10;"><i class="fas fa-times"></i></button>
-                        <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Search</button>
+                        <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i></button>
                     </div>
                 </form>
+            </div>
+            <div class="col-md-6 text-end">
+                <div class="btn-group">
+                    <button class="btn btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown">Genre</button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#" onclick="filterMovies('genre', 'Sci-Fi')">Sci-Fi</a></li>
+                        <li><a class="dropdown-item" href="#" onclick="filterMovies('genre', 'Action')">Action</a></li>
+                        <li><a class="dropdown-item" href="#" onclick="filterMovies('genre', 'Drama')">Drama</a></li>
+                    </ul>
+                </div>
+                <div class="btn-group ms-2">
+                    <button class="btn btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown">Year</button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#" onclick="filterMovies('year', '2023')">2023</a></li>
+                        <li><a class="dropdown-item" href="#" onclick="filterMovies('year', '2022')">2022</a></li>
+                        <li><a class="dropdown-item" href="#" onclick="filterMovies('year', '2021')">2021</a></li>
+                    </ul>
+                </div>
             </div>
         </div>
         <div id="movies-list" class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4"></div>
@@ -84,10 +125,13 @@
         document.addEventListener("DOMContentLoaded", () => {
             applyTheme();
             fetchMovies();
+            fetchTopMovies();
             setupAuthModal();
             setupSearch();
             const token = getToken();
             if (token) checkUserRoleAndRedirect();
+            document.getElementById("login-btn-mobile").addEventListener("click", () => document.getElementById("login-btn").click());
+            document.getElementById("signup-btn-mobile").addEventListener("click", () => document.getElementById("signup-btn").click());
         });
     </script>
 </body>

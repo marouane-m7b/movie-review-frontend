@@ -26,20 +26,151 @@ function renderMovies(movies) {
         movieCard.className = "col";
         movieCard.innerHTML = `
             <div class="card movie-card">
-                <img src="${movie.imageUri || 'https://via.placeholder.com/300x400'}" class="card-img-top" alt="${movie.title}">
+                <img src="${movie.imageUri || 'https://via.placeholder.com/300x400'}" class="card-img-top" alt="${movie.title}" loading="lazy">
                 <span class="custom-tooltip">${movie.title}</span>
                 <div class="card-body">
                     <div class="actions">
                         <button onclick="requireAuth()" class="btn-icon text-white"><i class="fas fa-eye"></i></button>
                         <button onclick="requireAuth()" class="btn-icon text-white"><i class="fas fa-check"></i></button>
                         <button onclick="requireAuth()" class="btn-icon text-white"><i class="fas fa-times"></i></button>
+                        <button onclick="requireAuth()" class="btn-icon text-white"><i class="far fa-heart"></i></button>
                     </div>
+                    <div class="rating">${getAverageRating(movie.movieId)}</div>
                 </div>
             </div>
         `;
         return movieCard;
     });
     movieElements.forEach(element => moviesList.appendChild(element));
+}
+
+async function fetchMoviesUser() {
+    const moviesList = document.getElementById("movies-list");
+    try {
+        const response = await fetchWithAuth(`${BASE_URL}/movies`);
+        const data = await response.json();
+        if (data.status === "success") {
+            renderMoviesUser(data.data);
+        } else {
+            moviesList.innerHTML = '<p class="col text-center text-muted">Error fetching movies.</p>';
+        }
+    } catch (error) {
+        console.error("Fetch movies error:", error);
+        moviesList.innerHTML = '<p class="col text-center text-muted">Error fetching movies.</p>';
+    }
+}
+
+async function renderMoviesUser(movies) {
+    const moviesList = document.getElementById("movies-list");
+    moviesList.innerHTML = "";
+    
+    const watchlistResponse = await fetchWithAuth(`${BASE_URL}/lists?type=watchlist`);
+    const watchlistData = await watchlistResponse.json();
+    const watchedResponse = await fetchWithAuth(`${BASE_URL}/lists?type=watched`);
+    const watchedData = await watchedResponse.json();
+    const droppedResponse = await fetchWithAuth(`${BASE_URL}/lists?type=dropped`);
+    const droppedData = await droppedResponse.json();
+    const favoritesResponse = await fetchWithAuth(`${BASE_URL}/lists?type=favorites`);
+    const favoritesData = await favoritesResponse.json();
+
+    const movieElements = movies.map(movie => {
+        const isInWatchlist = watchlistData.status === "success" && watchlistData.data.some(m => m.movieId === movie.movieId);
+        const isWatched = watchedData.status === "success" && watchedData.data.some(m => m.movieId === movie.movieId);
+        const isDropped = droppedData.status === "success" && droppedData.data.some(m => m.movieId === movie.movieId);
+        const isFavorite = favoritesData.status === "success" && favoritesData.data.some(m => m.movieId === movie.movieId);
+
+        const movieCard = document.createElement("div");
+        movieCard.className = "col";
+        movieCard.innerHTML = `
+            <div class="card movie-card">
+                <img src="${movie.imageUri || 'https://via.placeholder.com/300x400'}" class="card-img-top" alt="${movie.title}" loading="lazy">
+                <span class="custom-tooltip">${movie.title}</span>
+                <div class="card-body">
+                    <div class="actions">
+                        <button onclick="toggleWatchlist(${movie.movieId}, ${isInWatchlist})" class="btn-icon text-white ${isInWatchlist ? 'active' : ''}"><i class="fas ${isInWatchlist ? 'fa-eye-slash' : 'fa-eye'}"></i></button>
+                        <button onclick="toggleList(${movie.movieId}, 'watched', ${isWatched})" class="btn-icon text-white ${isWatched ? 'active' : ''}"><i class="fas ${isWatched ? 'fa-check-circle' : 'fa-check'}"></i></button>
+                        <button onclick="toggleList(${movie.movieId}, 'dropped', ${isDropped})" class="btn-icon text-white ${isDropped ? 'active' : ''}"><i class="fas ${isDropped ? 'fa-times-circle' : 'fa-times'}"></i></button>
+                        <button onclick="toggleFavorite(${movie.movieId}, ${isFavorite})" class="btn-icon text-white ${isFavorite ? 'active' : ''}"><i class="${isFavorite ? 'fas' : 'far'} fa-heart"></i></button>
+                    </div>
+                    <div class="rating">${getAverageRating(movie.movieId)}</div>
+                </div>
+            </div>
+        `;
+        movieCard.addEventListener("click", (e) => {
+            if (!e.target.tagName.match(/BUTTON/i)) showMovieDetails(movie);
+        });
+        return movieCard;
+    });
+
+    movieElements.forEach(element => moviesList.appendChild(element));
+}
+
+async function fetchTopMovies() {
+    const carouselItems = document.getElementById("carousel-items");
+    if (!carouselItems) return;
+
+    try {
+        const response = await fetch(`${BASE_URL}/movies`, { credentials: "include" });
+        const data = await response.json();
+        if (data.status === "success") {
+            const topMovies = data.data.slice(0, 5); // Top 5 as example
+            const items = topMovies.map((movie, index) => {
+                const item = document.createElement("div");
+                item.className = `carousel-item ${index === 0 ? 'active' : ''}`;
+                item.innerHTML = `
+                    <img src="${movie.imageUri || 'https://via.placeholder.com/1200x400'}" class="d-block w-100" alt="${movie.title}" loading="lazy">
+                    <div class="carousel-caption d-none d-md-block">
+                        <h5>${movie.title}</h5>
+                        <p>${movie.description || "No description available"}</p>
+                    </div>
+                `;
+                return item;
+            });
+            items.forEach(item => carouselItems.appendChild(item));
+        }
+    } catch (error) {
+        console.error("Fetch top movies error:", error);
+    }
+}
+
+async function fetchRecommendations() {
+    const recommendationsList = document.getElementById("recommendations");
+    if (!recommendationsList) return;
+
+    try {
+        const response = await fetch(`${BASE_URL}/movies`, { credentials: "include" });
+        const data = await response.json();
+        if (data.status === "success") {
+            const recommended = data.data.slice(0, 4); // Simple example, replace with real logic
+            const movieElements = recommended.map(movie => {
+                const movieCard = document.createElement("div");
+                movieCard.className = "col";
+                movieCard.innerHTML = `
+                    <div class="card movie-card">
+                        <img src="${movie.imageUri || 'https://via.placeholder.com/300x400'}" class="card-img-top" alt="${movie.title}" loading="lazy">
+                        <span class="custom-tooltip">${movie.title}</span>
+                        <div class="card-body">
+                            <div class="actions">
+                                <button onclick="toggleWatchlist(${movie.movieId}, false)" class="btn-icon text-white"><i class="fas fa-eye"></i></button>
+                                <button onclick="toggleList(${movie.movieId}, 'watched', false)" class="btn-icon text-white"><i class="fas fa-check"></i></button>
+                                <button onclick="toggleList(${movie.movieId}, 'dropped', false)" class="btn-icon text-white"><i class="fas fa-times"></i></button>
+                                <button onclick="toggleFavorite(${movie.movieId}, false)" class="btn-icon text-white"><i class="far fa-heart"></i></button>
+                            </div>
+                            <div class="rating">${getAverageRating(movie.movieId)}</div>
+                        </div>
+                    </div>
+                `;
+                movieCard.addEventListener("click", (e) => {
+                    if (!e.target.tagName.match(/BUTTON/i)) showMovieDetails(movie);
+                });
+                return movieCard;
+            });
+            movieElements.forEach(element => recommendationsList.appendChild(element));
+        }
+    } catch (error) {
+        console.error("Fetch recommendations error:", error);
+        recommendationsList.innerHTML = '<p class="col text-center text-muted">Error loading recommendations.</p>';
+    }
 }
 
 async function showMovieDetails(movie) {
@@ -50,6 +181,7 @@ async function showMovieDetails(movie) {
     const watchlistBtn = document.getElementById("add-watchlist");
     const watchedBtn = document.getElementById("add-watched");
     const droppedBtn = document.getElementById("add-dropped");
+    const favoriteBtn = document.getElementById("add-favorite");
     const reviewBtn = document.getElementById("add-review");
     const reviewsList = document.getElementById("reviews-list");
     const reviewForm = document.getElementById("submit-review-form");
@@ -74,6 +206,10 @@ async function showMovieDetails(movie) {
         const droppedData = await droppedResponse.json();
         const isDropped = droppedData.status === "success" && droppedData.data.some(m => m.movieId === movie.movieId);
 
+        const favoritesResponse = await fetch(`${BASE_URL}/lists?type=favorites`, { credentials: "include" });
+        const favoritesData = await favoritesResponse.json();
+        const isFavorite = favoritesData.status === "success" && favoritesData.data.some(m => m.movieId === movie.movieId);
+
         watchlistBtn.innerHTML = `<i class="fas ${isInWatchlist ? 'fa-eye-slash' : 'fa-eye'}"></i>`;
         watchlistBtn.className = `btn-icon text-white ${isInWatchlist ? 'active' : ''}`;
         watchlistBtn.onclick = () => toggleWatchlist(movie.movieId, isInWatchlist);
@@ -86,6 +222,10 @@ async function showMovieDetails(movie) {
         droppedBtn.className = `btn-icon text-white ${isDropped ? 'active' : ''}`;
         droppedBtn.onclick = () => toggleList(movie.movieId, "dropped", isDropped);
 
+        favoriteBtn.innerHTML = `<i class="${isFavorite ? 'fas' : 'far'} fa-heart"></i>`;
+        favoriteBtn.className = `btn-icon text-white ${isFavorite ? 'active' : ''}`;
+        favoriteBtn.onclick = () => toggleFavorite(movie.movieId, isFavorite);
+
         reviewBtn.onclick = () => {};
         setupReviewForm(movie.movieId);
         setupEditReviewForm(movie.movieId);
@@ -93,6 +233,7 @@ async function showMovieDetails(movie) {
         watchlistBtn.onclick = () => requireAuth();
         watchedBtn.onclick = () => requireAuth();
         droppedBtn.onclick = () => requireAuth();
+        favoriteBtn.onclick = () => requireAuth();
         reviewBtn.onclick = () => requireAuth();
         reviewForm.style.display = "none";
         editReviewForm.style.display = "none";
@@ -174,6 +315,7 @@ async function toggleWatchlist(movieId, isInWatchlist) {
             watchlistBtn.className = `btn-icon text-white ${isInWatchlist ? '' : 'active'}`;
             watchlistBtn.onclick = () => toggleWatchlist(movieId, !isInWatchlist);
             alert(data.message);
+            fetchMoviesUser(); // Refresh movies if on user page
         } else {
             alert(data.message || "Failed to update watchlist.");
         }
@@ -196,12 +338,37 @@ async function toggleList(movieId, listType, isInList) {
             btn.className = `btn-icon text-white ${isInList ? '' : 'active'}`;
             btn.onclick = () => toggleList(movieId, listType, !isInList);
             alert(data.message);
+            fetchMoviesUser(); // Refresh movies if on user page
         } else {
             alert(data.message || `Failed to ${isInList ? 'remove from' : 'add to'} ${listType}.`);
         }
     } catch (error) {
         console.error(`Toggle ${listType} error:`, error);
         alert(`Failed to ${isInList ? 'remove from' : 'add to'} ${listType}.`);
+    }
+}
+
+async function toggleFavorite(movieId, isFavorite) {
+    try {
+        const method = isFavorite ? "DELETE" : "POST";
+        const response = await fetchWithAuth(`${BASE_URL}/lists?movie_id=${movieId}&type=favorites`, {
+            method: method
+        });
+        const data = await response.json();
+        if (data.status === "success") {
+            const favoriteBtn = document.getElementById("add-favorite");
+            favoriteBtn.innerHTML = `<i class="${isFavorite ? 'far' : 'fas'} fa-heart"></i>`;
+            favoriteBtn.className = `btn-icon text-white ${isFavorite ? '' : 'active'}`;
+            favoriteBtn.onclick = () => toggleFavorite(movieId, !isFavorite);
+            fetchFavorites(); // Refresh favorites on profile page if present
+            fetchMoviesUser(); // Refresh movies if on user page
+            alert(data.message);
+        } else {
+            alert(data.message || "Failed to update favorites.");
+        }
+    } catch (error) {
+        console.error("Toggle favorite error:", error);
+        alert("Failed to update favorites.");
     }
 }
 
@@ -325,4 +492,60 @@ function setupSearch() {
         const isUserPage = window.location.pathname.includes("user.html");
         isUserPage ? fetchMoviesUser() : fetchMovies();
     });
+}
+
+function filterMovies(key, value) {
+    fetch(`${BASE_URL}/movies`, { credentials: "include" })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === "success") {
+                const filtered = data.data.filter(movie => movie[key] === value);
+                const isUserPage = window.location.pathname.includes("user.html");
+                isUserPage ? renderMoviesUser(filtered) : renderMovies(filtered);
+            }
+        })
+        .catch(error => console.error("Filter error:", error));
+}
+
+function getAverageRating(movieId) {
+    // Placeholder: assumes reviews are fetched elsewhere or cached
+    // Replace with real logic if backend provides ratings
+    return "★★★★☆"; // Example rating
+}
+
+// Placeholder for fetchFavorites (used in profile.html)
+async function fetchFavorites() {
+    const favoritesList = document.getElementById("favorites-list");
+    if (!favoritesList) return;
+
+    try {
+        const response = await fetchWithAuth(`${BASE_URL}/lists?type=favorites`);
+        const data = await response.json();
+        console.log("Favorites fetch:", data);
+        if (data.status === "success" && Array.isArray(data.data)) {
+            const movieElements = data.data.map(movie => {
+                const movieCard = document.createElement("div");
+                movieCard.className = "col";
+                movieCard.innerHTML = `
+                    <div class="card movie-card">
+                        <img src="${movie.imageUri || 'https://via.placeholder.com/300x400'}" class="card-img-top" alt="${movie.title}" loading="lazy">
+                        <span class="custom-tooltip">${movie.title}</span>
+                        <div class="card-body">
+                            <div class="actions">
+                                <button onclick="toggleFavorite(${movie.movieId}, true)" class="btn-icon text-white active"><i class="fas fa-heart"></i></button>
+                            </div>
+                            <div class="rating">${getAverageRating(movie.movieId)}</div>
+                        </div>
+                    </div>
+                `;
+                return movieCard;
+            });
+            movieElements.forEach(element => favoritesList.appendChild(element));
+        } else {
+            favoritesList.innerHTML = '<p class="col text-center text-muted">No favorite movies yet.</p>';
+        }
+    } catch (error) {
+        console.error("Fetch favorites error:", error);
+        favoritesList.innerHTML = '<p class="col text-center text-muted">Error loading favorites.</p>';
+    }
 }
