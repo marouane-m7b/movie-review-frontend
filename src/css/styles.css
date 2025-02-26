@@ -1,16 +1,15 @@
 body {
-    background-color: #1a1a1a;
     font-family: 'Arial', sans-serif;
-    color: #e0e0e0;
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-.bg-grey {
-    background-color: #333 !important;
-}
+.bg-dark { background-color: #1a1a1a !important; }
+.text-light { color: #e0e0e0 !important; }
+.bg-light { background-color: #f8f9fa !important; }
+.text-dark { color: #333 !important; }
 
-.text-grey {
-    color: #ccc !important;
-}
+.bg-grey { background-color: #333 !important; }
+.text-grey { color: #ccc !important; }
 
 .movie-card {
     position: relative;
@@ -32,6 +31,11 @@ body {
     height: 100%;
     object-fit: cover;
     opacity: 0.8;
+    transition: opacity 0.3s ease;
+}
+
+.movie-card:hover img {
+    opacity: 0.9;
 }
 
 .movie-card .card-body {
@@ -44,30 +48,47 @@ body {
     color: #fff;
 }
 
-.movie-card .card-title {
+.movie-card .custom-tooltip {
     position: absolute;
-    top: 50%;
+    top: -40px;
     left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 1.5rem;
-    font-weight: bold;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+    transform: translateX(-50%);
+    background-color: rgba(0, 0, 0, 0.9);
     color: #fff;
+    padding: 8px 12px;
+    border-radius: 5px;
+    font-size: 1.2rem;
     opacity: 0;
+    pointer-events: none;
     transition: opacity 0.3s ease-in-out;
+    white-space: nowrap;
+    z-index: 10;
 }
 
-.movie-card:hover .card-title {
+.movie-card:hover .custom-tooltip {
     opacity: 1;
 }
 
-.movie-card .actions {
+.actions {
     position: absolute;
     bottom: 10px;
-    left: 10px;
-    right: 10px;
+    left: 0;
+    right: 0;
     display: flex;
-    justify-content: space-around;
+    justify-content: center;
+    gap: 10px;
+}
+
+.btn-icon {
+    background: none;
+    border: none;
+    padding: 5px;
+    font-size: 1.2rem;
+    transition: color 0.3s ease;
+}
+
+.btn-icon:hover, .btn-icon.active {
+    color: #ffd700;
 }
 
 .btn-outline-primary, .btn-outline-success, .btn-outline-danger, .btn-outline-info {
@@ -86,8 +107,6 @@ body {
 }
 
 .nav-tabs .nav-link {
-    color: #e0e0e0;
-    background-color: #2a2a2a;
     border: none;
 }
 
@@ -100,4 +119,16 @@ body {
 .star-rating {
     color: #ffd700;
     font-size: 1.2rem;
+}
+
+.dropdown-menu {
+    border: none;
+}
+
+.dropdown-item {
+    transition: background-color 0.3s ease;
+}
+
+.dropdown-item:hover {
+    background-color: #007bff;
 }

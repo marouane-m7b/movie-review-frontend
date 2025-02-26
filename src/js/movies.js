@@ -21,20 +21,25 @@ async function fetchMovies() {
 function renderMovies(movies) {
     const moviesList = document.getElementById("movies-list");
     moviesList.innerHTML = "";
-    movies.forEach(movie => {
+    const movieElements = movies.map(movie => {
         const movieCard = document.createElement("div");
         movieCard.className = "col";
         movieCard.innerHTML = `
             <div class="card movie-card">
                 <img src="${movie.imageUri || 'https://via.placeholder.com/300x400'}" class="card-img-top" alt="${movie.title}">
+                <span class="custom-tooltip">${movie.title}</span>
                 <div class="card-body">
-                    <h5 class="card-title">${movie.title}</h5>
+                    <div class="actions">
+                        <button onclick="requireAuth()" class="btn-icon text-white"><i class="fas fa-eye"></i></button>
+                        <button onclick="requireAuth()" class="btn-icon text-white"><i class="fas fa-check"></i></button>
+                        <button onclick="requireAuth()" class="btn-icon text-white"><i class="fas fa-times"></i></button>
+                    </div>
                 </div>
             </div>
         `;
-        movieCard.addEventListener("click", () => showMovieDetails(movie));
-        moviesList.appendChild(movieCard);
+        return movieCard;
     });
+    movieElements.forEach(element => moviesList.appendChild(element));
 }
 
 async function showMovieDetails(movie) {
@@ -61,12 +66,26 @@ async function showMovieDetails(movie) {
         const watchlistData = await watchlistResponse.json();
         const isInWatchlist = watchlistData.status === "success" && watchlistData.data.some(m => m.movieId === movie.movieId);
 
-        watchlistBtn.innerHTML = isInWatchlist ? '<i class="fas fa-eye-slash"></i> Remove' : '<i class="fas fa-eye"></i> Watchlist';
-        watchlistBtn.className = isInWatchlist ? 'btn btn-outline-danger btn-sm' : 'btn btn-outline-primary btn-sm';
+        const watchedResponse = await fetch(`${BASE_URL}/lists?type=watched`, { credentials: "include" });
+        const watchedData = await watchedResponse.json();
+        const isWatched = watchedData.status === "success" && watchedData.data.some(m => m.movieId === movie.movieId);
+
+        const droppedResponse = await fetch(`${BASE_URL}/lists?type=dropped`, { credentials: "include" });
+        const droppedData = await droppedResponse.json();
+        const isDropped = droppedData.status === "success" && droppedData.data.some(m => m.movieId === movie.movieId);
+
+        watchlistBtn.innerHTML = `<i class="fas ${isInWatchlist ? 'fa-eye-slash' : 'fa-eye'}"></i>`;
+        watchlistBtn.className = `btn-icon text-white ${isInWatchlist ? 'active' : ''}`;
         watchlistBtn.onclick = () => toggleWatchlist(movie.movieId, isInWatchlist);
 
-        watchedBtn.onclick = () => addToList(movie.movieId, "watched");
-        droppedBtn.onclick = () => addToList(movie.movieId, "dropped");
+        watchedBtn.innerHTML = `<i class="fas ${isWatched ? 'fa-check-circle' : 'fa-check'}"></i>`;
+        watchedBtn.className = `btn-icon text-white ${isWatched ? 'active' : ''}`;
+        watchedBtn.onclick = () => toggleList(movie.movieId, "watched", isWatched);
+
+        droppedBtn.innerHTML = `<i class="fas ${isDropped ? 'fa-times-circle' : 'fa-times'}"></i>`;
+        droppedBtn.className = `btn-icon text-white ${isDropped ? 'active' : ''}`;
+        droppedBtn.onclick = () => toggleList(movie.movieId, "dropped", isDropped);
+
         reviewBtn.onclick = () => {};
         setupReviewForm(movie.movieId);
         setupEditReviewForm(movie.movieId);
@@ -151,8 +170,8 @@ async function toggleWatchlist(movieId, isInWatchlist) {
         const data = await response.json();
         if (data.status === "success") {
             const watchlistBtn = document.getElementById("add-watchlist");
-            watchlistBtn.innerHTML = isInWatchlist ? '<i class="fas fa-eye"></i> Watchlist' : '<i class="fas fa-eye-slash"></i> Remove';
-            watchlistBtn.className = isInWatchlist ? 'btn btn-outline-primary btn-sm' : 'btn btn-outline-danger btn-sm';
+            watchlistBtn.innerHTML = `<i class="fas ${isInWatchlist ? 'fa-eye' : 'fa-eye-slash'}"></i>`;
+            watchlistBtn.className = `btn-icon text-white ${isInWatchlist ? '' : 'active'}`;
             watchlistBtn.onclick = () => toggleWatchlist(movieId, !isInWatchlist);
             alert(data.message);
         } else {
@@ -161,6 +180,28 @@ async function toggleWatchlist(movieId, isInWatchlist) {
     } catch (error) {
         console.error("Toggle watchlist error:", error);
         alert("Failed to update watchlist.");
+    }
+}
+
+async function toggleList(movieId, listType, isInList) {
+    try {
+        const method = isInList ? "DELETE" : "POST";
+        const response = await fetchWithAuth(`${BASE_URL}/lists?movie_id=${movieId}&type=${listType}`, {
+            method: method
+        });
+        const data = await response.json();
+        if (data.status === "success") {
+            const btn = listType === "watched" ? document.getElementById("add-watched") : document.getElementById("add-dropped");
+            btn.innerHTML = `<i class="fas ${listType === 'watched' ? (isInList ? 'fa-check' : 'fa-check-circle') : (isInList ? 'fa-times' : 'fa-times-circle')}"></i>`;
+            btn.className = `btn-icon text-white ${isInList ? '' : 'active'}`;
+            btn.onclick = () => toggleList(movieId, listType, !isInList);
+            alert(data.message);
+        } else {
+            alert(data.message || `Failed to ${isInList ? 'remove from' : 'add to'} ${listType}.`);
+        }
+    } catch (error) {
+        console.error(`Toggle ${listType} error:`, error);
+        alert(`Failed to ${isInList ? 'remove from' : 'add to'} ${listType}.`);
     }
 }
 
@@ -251,7 +292,8 @@ function editReview(reviewId, rating, comment) {
 
 function setupSearch() {
     const searchForm = document.getElementById("search-form");
-    if (!searchForm) return;
+    const clearSearchBtn = document.getElementById("clear-search");
+    if (!searchForm || !clearSearchBtn) return;
 
     searchForm.addEventListener("submit", async (e) => {
         e.preventDefault();
@@ -276,5 +318,11 @@ function setupSearch() {
             const moviesList = document.getElementById("movies-list");
             moviesList.innerHTML = '<p class="col text-center text-muted">Error searching movies.</p>';
         }
+    });
+
+    clearSearchBtn.addEventListener("click", () => {
+        document.getElementById("search-input").value = "";
+        const isUserPage = window.location.pathname.includes("user.html");
+        isUserPage ? fetchMoviesUser() : fetchMovies();
     });
 }

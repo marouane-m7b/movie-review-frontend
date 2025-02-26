@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Movie Review - Watchlist</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link href="../css/styles.css" rel="stylesheet">
+</head>
+<body class="bg-dark text-light">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="../index.html">Movie Review</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle text-light" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-user-circle"></i>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end bg-dark" aria-labelledby="userDropdown">
+                            <li><a class="dropdown-item text-light" href="profile.html"><i class="fas fa-user"></i> Profile</a></li>
+                            <li><a class="dropdown-item text-light" href="watchlist.html"><i class="fas fa-eye"></i> Watchlist</a></li>
+                            <li><a class="dropdown-item text-light" href="watched.html"><i class="fas fa-check"></i> Watched</a></li>
+                            <li><a class="dropdown-item text-light" href="dropped.html"><i class="fas fa-times"></i> Dropped</a></li>
+                            <li><a class="dropdown-item text-light" href="settings.html"><i class="fas fa-cog"></i> Settings</a></li>
+                            <li><hr class="dropdown-divider bg-light"></li>
+                            <li><button id="logout-btn" class="dropdown-item text-light btn"><i class="fas fa-sign-out-alt"></i> Logout</button></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container my-5">
+        <h1 class="display-4 text-center mb-5 fw-bold">Watchlist</h1>
+        <div id="lists-content" class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4"></div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <script src="../js/utils.js"></script>
+    <script src="../js/auth.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            if (!getToken()) {
+                window.location.href = "../index.html";
+                return;
+            }
+            applyTheme();
+            setupLogout();
+            fetchUserList("watchlist");
+        });
+    
+        async function fetchUserList(listType) {
+            const listsContent = document.getElementById("lists-content");
+            try {
+                const response = await fetchWithAuth(`${BASE_URL}/lists?type=${listType}`);
+                const data = await response.json();
+                console.log("List fetch:", data); // Debug
+                if (data.status === "success") {
+                    renderUserList(data.data, listType);
+                } else {
+                    listsContent.innerHTML = '<p class="col text-center text-muted">Error fetching list.</p>';
+                }
+            } catch (error) {
+                console.error("Fetch list error:", error);
+                listsContent.innerHTML = '<p class="col text-center text-muted">Error fetching list.</p>';
+            }
+        }
+    
+        function renderUserList(movies, listType) {
+            const listsContent = document.getElementById("lists-content");
+            listsContent.innerHTML = "";
+            if (!movies || movies.length === 0) {
+                listsContent.innerHTML = `<p class="col text-center text-muted">No movies in your ${listType} yet.</p>`;
+                return;
+            }
+            const movieElements = movies.map(movie => {
+                const listItem = document.createElement("div");
+                listItem.className = "col";
+                listItem.innerHTML = `
+                    <div class="card movie-card">
+                        <img src="${movie.imageUri || 'https://via.placeholder.com/300x400'}" class="card-img-top" alt="${movie.title}">
+                        <span class="custom-tooltip">${movie.title}</span>
+                        <div class="card-body">
+                            <button onclick="removeFromList(${movie.movieId}, '${listType}')" class="btn-icon text-white"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+                `;
+                return listItem;
+            });
+            movieElements.forEach(element => listsContent.appendChild(element));
+        }
+    
+        async function removeFromList(movieId, listType) {
+            try {
+                const response = await fetchWithAuth(`${BASE_URL}/lists?movie_id=${movieId}&type=${listType}`, {
+                    method: "DELETE"
+                });
+                const data = await response.json();
+                if (data.status === "success") {
+                    fetchUserList(listType);
+                }
+                alert(data.message);
+            } catch (error) {
+                console.error("Remove from list error:", error);
+                alert("Failed to remove from list.");
+            }
+        }
+    </script>
+</body>
+</html>
