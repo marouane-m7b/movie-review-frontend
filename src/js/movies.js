@@ -61,7 +61,7 @@ async function showMovieDetails(movie) {
         watchlistBtn.onclick = () => addToList(movie.movieId, "watchlist");
         watchedBtn.onclick = () => addToList(movie.movieId, "watched");
         droppedBtn.onclick = () => addToList(movie.movieId, "dropped");
-        reviewBtn.onclick = () => {}; // Handled by Bootstrap collapse
+        reviewBtn.onclick = () => {};
         setupReviewForm(movie.movieId);
         setupEditReviewForm(movie.movieId);
     } else {
@@ -101,7 +101,8 @@ function renderReviews(reviews, reviewsList) {
         reviewsList.innerHTML += '<p class="text-muted">No reviews yet.</p>';
         return;
     }
-    const currentUserId = getCurrentUserId(); // Assume this fetches from token or profile
+    const currentUserId = getCurrentUserId();
+    console.log("Current user ID:", currentUserId);
     reviews.forEach(review => {
         const reviewItem = document.createElement("div");
         reviewItem.className = "border-top pt-2 mt-2";
@@ -138,7 +139,6 @@ async function setupReviewForm(movieId) {
     const reviewForm = document.getElementById("submit-review-form");
     const reviewsList = document.getElementById("reviews-list");
 
-    // Remove existing listeners to prevent duplicates
     const newForm = reviewForm.cloneNode(true);
     reviewForm.parentNode.replaceChild(newForm, reviewForm);
 
@@ -173,7 +173,6 @@ async function setupEditReviewForm(movieId) {
     const editForm = document.getElementById("edit-review-form-inner");
     const reviewsList = document.getElementById("reviews-list");
 
-    // Remove existing listeners
     const newEditForm = editForm.cloneNode(true);
     editForm.parentNode.replaceChild(newEditForm, editForm);
 
@@ -183,10 +182,13 @@ async function setupEditReviewForm(movieId) {
         const rating = document.getElementById("edit-review-rating").value;
         const comment = document.getElementById("edit-review-comment").value;
 
+        const body = `review_id=${encodeURIComponent(reviewId)}&rating=${encodeURIComponent(rating)}&comment=${encodeURIComponent(comment)}`;
+        console.log("Edit review request body:", body);
+
         try {
             const response = await fetchWithAuth(`${BASE_URL}/reviews`, {
                 method: "PUT",
-                body: `review_id=${encodeURIComponent(reviewId)}&rating=${encodeURIComponent(rating)}&comment=${encodeURIComponent(comment)}`
+                body: body
             });
             const data = await response.json();
             console.log("Review edit response:", data);
@@ -211,17 +213,39 @@ function editReview(reviewId, rating, comment) {
     const editComment = document.getElementById("edit-review-comment");
     const editForm = document.getElementById("edit-review-form");
 
+    console.log("Editing review:", { reviewId, rating, comment: decodeURIComponent(comment) });
     editReviewId.value = reviewId;
     editRating.value = rating;
     editComment.value = decodeURIComponent(comment);
     editForm.classList.add("show");
 }
 
-// Placeholder for fetching current user ID (simplified for now)
-function getCurrentUserId() {
-    const token = getToken();
-    if (!token) return null;
-    // In a real app, decode token or fetch from /profile
-    // For now, assume userId from token or profile (e.g., 17 for "mouad")
-    return 17; // Replace with actual logic later
+function setupSearch() {
+    const searchForm = document.getElementById("search-form");
+    if (!searchForm) return;
+
+    searchForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const query = document.getElementById("search-input").value.trim();
+        if (!query) return;
+
+        try {
+            const response = await fetch(`${BASE_URL}/movies/search?q=${encodeURIComponent(query)}`, {
+                credentials: "include"
+            });
+            const data = await response.json();
+            console.log("Search response:", data);
+            if (data.status === "success") {
+                const isUserPage = window.location.pathname.includes("user.html") ? true : false;
+                isUserPage ? renderMoviesUser(data.data) : renderMovies(data.data);
+            } else {
+                const moviesList = document.getElementById("movies-list");
+                moviesList.innerHTML = '<p class="col text-center text-muted">No movies found.</p>';
+            }
+        } catch (error) {
+            console.error("Search error:", error);
+            const moviesList = document.getElementById("movies-list");
+            moviesList.innerHTML = '<p class="col text-center text-muted">Error searching movies.</p>';
+        }
+    });
 }
