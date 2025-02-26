@@ -25,11 +25,10 @@ function renderMovies(movies) {
         const movieCard = document.createElement("div");
         movieCard.className = "col";
         movieCard.innerHTML = `
-            <div class="card movie-card h-100">
-                <img src="${movie.imageUri || 'https://via.placeholder.com/300x300'}" class="card-img-top" alt="${movie.title}">
+            <div class="card movie-card">
+                <img src="${movie.imageUri || 'https://via.placeholder.com/300x400'}" class="card-img-top" alt="${movie.title}">
                 <div class="card-body">
                     <h5 class="card-title">${movie.title}</h5>
-                    <p class="card-text text-muted">${movie.description || "No description available"}</p>
                 </div>
             </div>
         `;
@@ -52,13 +51,20 @@ async function showMovieDetails(movie) {
     const editReviewForm = document.getElementById("edit-review-form-inner");
 
     title.textContent = movie.title;
-    image.src = movie.imageUri || "https://via.placeholder.com/300x300";
+    image.src = movie.imageUri || "https://via.placeholder.com/300x400";
     description.textContent = movie.description || "No description available";
     info.textContent = `Year: ${movie.releaseYear} | Genre: ${movie.genre || "N/A"}`;
 
     const token = getToken();
     if (token) {
-        watchlistBtn.onclick = () => addToList(movie.movieId, "watchlist");
+        const watchlistResponse = await fetch(`${BASE_URL}/lists?type=watchlist`, { credentials: "include" });
+        const watchlistData = await watchlistResponse.json();
+        const isInWatchlist = watchlistData.status === "success" && watchlistData.data.some(m => m.movieId === movie.movieId);
+
+        watchlistBtn.innerHTML = isInWatchlist ? '<i class="fas fa-eye-slash"></i> Remove' : '<i class="fas fa-eye"></i> Watchlist';
+        watchlistBtn.className = isInWatchlist ? 'btn btn-outline-danger btn-sm' : 'btn btn-outline-primary btn-sm';
+        watchlistBtn.onclick = () => toggleWatchlist(movie.movieId, isInWatchlist);
+
         watchedBtn.onclick = () => addToList(movie.movieId, "watched");
         droppedBtn.onclick = () => addToList(movie.movieId, "dropped");
         reviewBtn.onclick = () => {};
@@ -107,11 +113,12 @@ function renderReviews(reviews, reviewsList) {
         const reviewItem = document.createElement("div");
         reviewItem.className = "border-top pt-2 mt-2";
         const canEdit = currentUserId && review.userId === currentUserId;
+        const stars = '<i class="fas fa-star star-rating"></i>'.repeat(review.rating) + '<i class="far fa-star star-rating"></i>'.repeat(5 - review.rating);
         reviewItem.innerHTML = `
-            <p><strong>${review.username || "Anonymous"}:</strong> ${review.rating} ★</p>
+            <p><strong>${review.username || "Anonymous"}:</strong> ${stars}</p>
             <p class="text-muted">${review.comment || "No comment"}</p>
             <small class="text-muted">${new Date(review.reviewDate).toLocaleDateString()}</small>
-            ${canEdit ? `<button class="btn btn-outline-primary btn-sm mt-2" onclick="editReview(${review.reviewId}, ${review.rating}, '${encodeURIComponent(review.comment || '')}')">Edit</button>` : ""}
+            ${canEdit ? `<button class="btn btn-outline-primary btn-sm mt-2" onclick="editReview(${review.reviewId}, ${review.rating}, '${encodeURIComponent(review.comment || '')}')"><i class="fas fa-edit"></i> Edit</button>` : ""}
         `;
         reviewsList.appendChild(reviewItem);
     });
@@ -132,6 +139,28 @@ async function addToList(movieId, listType) {
     } catch (error) {
         console.error("Add to list error:", error);
         alert("Failed to add to list.");
+    }
+}
+
+async function toggleWatchlist(movieId, isInWatchlist) {
+    try {
+        const method = isInWatchlist ? "DELETE" : "POST";
+        const response = await fetchWithAuth(`${BASE_URL}/lists?movie_id=${movieId}&type=watchlist`, {
+            method: method
+        });
+        const data = await response.json();
+        if (data.status === "success") {
+            const watchlistBtn = document.getElementById("add-watchlist");
+            watchlistBtn.innerHTML = isInWatchlist ? '<i class="fas fa-eye"></i> Watchlist' : '<i class="fas fa-eye-slash"></i> Remove';
+            watchlistBtn.className = isInWatchlist ? 'btn btn-outline-primary btn-sm' : 'btn btn-outline-danger btn-sm';
+            watchlistBtn.onclick = () => toggleWatchlist(movieId, !isInWatchlist);
+            alert(data.message);
+        } else {
+            alert(data.message || "Failed to update watchlist.");
+        }
+    } catch (error) {
+        console.error("Toggle watchlist error:", error);
+        alert("Failed to update watchlist.");
     }
 }
 
@@ -236,7 +265,7 @@ function setupSearch() {
             const data = await response.json();
             console.log("Search response:", data);
             if (data.status === "success") {
-                const isUserPage = window.location.pathname.includes("user.html") ? true : false;
+                const isUserPage = window.location.pathname.includes("user.html");
                 isUserPage ? renderMoviesUser(data.data) : renderMovies(data.data);
             } else {
                 const moviesList = document.getElementById("movies-list");
