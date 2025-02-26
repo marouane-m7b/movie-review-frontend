@@ -49,6 +49,7 @@ async function showMovieDetails(movie) {
     const reviewBtn = document.getElementById("add-review");
     const reviewsList = document.getElementById("reviews-list");
     const reviewForm = document.getElementById("submit-review-form");
+    const editReviewForm = document.getElementById("edit-review-form-inner");
 
     title.textContent = movie.title;
     image.src = movie.imageUri || "https://via.placeholder.com/300x300";
@@ -61,16 +62,18 @@ async function showMovieDetails(movie) {
         watchedBtn.onclick = () => addToList(movie.movieId, "watched");
         droppedBtn.onclick = () => addToList(movie.movieId, "dropped");
         reviewBtn.onclick = () => {}; // Handled by Bootstrap collapse
-        setupReviewForm(movie.movieId); // Pass movieId only
+        setupReviewForm(movie.movieId);
+        setupEditReviewForm(movie.movieId);
     } else {
         watchlistBtn.onclick = () => requireAuth();
         watchedBtn.onclick = () => requireAuth();
         droppedBtn.onclick = () => requireAuth();
         reviewBtn.onclick = () => requireAuth();
         reviewForm.style.display = "none";
+        editReviewForm.style.display = "none";
     }
 
-    await refreshReviews(movie.movieId, reviewsList); // Fetch and render reviews initially
+    await refreshReviews(movie.movieId, reviewsList);
     detailsModal.show();
 }
 
@@ -80,7 +83,7 @@ async function refreshReviews(movieId, reviewsList) {
             credentials: "include"
         });
         const data = await response.json();
-        console.log("Reviews fetch:", data); // Debug
+        console.log("Reviews fetch:", data);
         if (data.status === "success" && Array.isArray(data.data)) {
             renderReviews(data.data, reviewsList);
         } else {
@@ -98,13 +101,16 @@ function renderReviews(reviews, reviewsList) {
         reviewsList.innerHTML += '<p class="text-muted">No reviews yet.</p>';
         return;
     }
+    const currentUserId = getCurrentUserId(); // Assume this fetches from token or profile
     reviews.forEach(review => {
         const reviewItem = document.createElement("div");
         reviewItem.className = "border-top pt-2 mt-2";
+        const canEdit = currentUserId && review.userId === currentUserId;
         reviewItem.innerHTML = `
             <p><strong>${review.username || "Anonymous"}:</strong> ${review.rating} ★</p>
             <p class="text-muted">${review.comment || "No comment"}</p>
             <small class="text-muted">${new Date(review.reviewDate).toLocaleDateString()}</small>
+            ${canEdit ? `<button class="btn btn-outline-primary btn-sm mt-2" onclick="editReview(${review.reviewId}, ${review.rating}, '${encodeURIComponent(review.comment || '')}')">Edit</button>` : ""}
         `;
         reviewsList.appendChild(reviewItem);
     });
@@ -150,7 +156,7 @@ async function setupReviewForm(movieId) {
             console.log("Review submission response:", data);
             if (data.status === "success") {
                 alert("Review submitted successfully!");
-                await refreshReviews(movieId, reviewsList); // Refresh reviews after submission
+                await refreshReviews(movieId, reviewsList);
                 newForm.reset();
                 document.getElementById("review-form").classList.remove("show");
             } else {
@@ -161,4 +167,61 @@ async function setupReviewForm(movieId) {
             alert("Failed to submit review.");
         }
     });
+}
+
+async function setupEditReviewForm(movieId) {
+    const editForm = document.getElementById("edit-review-form-inner");
+    const reviewsList = document.getElementById("reviews-list");
+
+    // Remove existing listeners
+    const newEditForm = editForm.cloneNode(true);
+    editForm.parentNode.replaceChild(newEditForm, editForm);
+
+    newEditForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const reviewId = document.getElementById("edit-review-id").value;
+        const rating = document.getElementById("edit-review-rating").value;
+        const comment = document.getElementById("edit-review-comment").value;
+
+        try {
+            const response = await fetchWithAuth(`${BASE_URL}/reviews`, {
+                method: "PUT",
+                body: `review_id=${encodeURIComponent(reviewId)}&rating=${encodeURIComponent(rating)}&comment=${encodeURIComponent(comment)}`
+            });
+            const data = await response.json();
+            console.log("Review edit response:", data);
+            if (data.status === "success") {
+                alert("Review updated successfully!");
+                await refreshReviews(movieId, reviewsList);
+                newEditForm.reset();
+                document.getElementById("edit-review-form").classList.remove("show");
+            } else {
+                alert(data.message || "Failed to update review.");
+            }
+        } catch (error) {
+            console.error("Edit review error:", error);
+            alert("Failed to update review.");
+        }
+    });
+}
+
+function editReview(reviewId, rating, comment) {
+    const editReviewId = document.getElementById("edit-review-id");
+    const editRating = document.getElementById("edit-review-rating");
+    const editComment = document.getElementById("edit-review-comment");
+    const editForm = document.getElementById("edit-review-form");
+
+    editReviewId.value = reviewId;
+    editRating.value = rating;
+    editComment.value = decodeURIComponent(comment);
+    editForm.classList.add("show");
+}
+
+// Placeholder for fetching current user ID (simplified for now)
+function getCurrentUserId() {
+    const token = getToken();
+    if (!token) return null;
+    // In a real app, decode token or fetch from /profile
+    // For now, assume userId from token or profile (e.g., 17 for "mouad")
+    return 17; // Replace with actual logic later
 }
