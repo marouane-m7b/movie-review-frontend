@@ -19,7 +19,7 @@ body {
     transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
     cursor: pointer;
     border-radius: 10px;
-    animation: fadeIn 0.5s ease-out forwards;
+    /* animation: fadeIn 0.5s ease-out forwards; */
 }
 
 .movie-card:hover {

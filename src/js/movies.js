@@ -20,7 +20,6 @@ async function fetchMovies() {
 
 function renderMovies(movies) {
     const moviesList = document.getElementById("movies-list");
-    moviesList.innerHTML = "";
     const movieElements = movies.map(movie => {
         const movieCard = document.createElement("div");
         movieCard.className = "col";
@@ -41,6 +40,7 @@ function renderMovies(movies) {
         `;
         return movieCard;
     });
+    moviesList.innerHTML = "";
     movieElements.forEach(element => moviesList.appendChild(element));
 }
 
@@ -64,7 +64,6 @@ async function fetchMoviesUser() {
 
 async function renderMoviesUser(movies) {
     const moviesList = document.getElementById("movies-list");
-    moviesList.innerHTML = "";
     
     const watchlistResponse = await fetchWithAuth(`${BASE_URL}/lists?type=watchlist`);
     const watchlistData = await watchlistResponse.json();
@@ -101,7 +100,8 @@ async function renderMoviesUser(movies) {
         movieCard.querySelector('.card-img-top').addEventListener("click", () => showMovieDetails(movie));
         return movieCard;
     });
-
+    
+    moviesList.innerHTML = "";
     movieElements.forEach(element => moviesList.appendChild(element));
 }
 
