@@ -84,7 +84,7 @@ async function renderMoviesUser(movies) {
         const movieCard = document.createElement("div");
         movieCard.className = "col";
         movieCard.innerHTML = `
-            <div class="card movie-card" data-movie-id="${movie.movieId}">
+            <div class="movie-card" data-movie-id="${movie.movieId}">
                 <img src="${movie.imageUri || 'https://via.placeholder.com/300x400'}" class="card-img-top" alt="${movie.title}" loading="lazy">
                 <span class="custom-tooltip">${movie.title}</span>
                 <div class="card-body">
@@ -298,7 +298,6 @@ async function toggleWatchlist(event, movieId, isInWatchlist) {
             watchlistBtn.style.color = isInWatchlist ? 'white' : '#ffd700';
             watchlistBtn.onclick = (e) => toggleWatchlist(e, movieId, !isInWatchlist);
             fetchMoviesUser();
-            fetchUserList("watchlist");
             showToast(data.message, "success");
         } else {
             showToast(data.message || "Failed to update watchlist", "danger");
@@ -320,7 +319,6 @@ async function toggleList(event, movieId, listType, isInList) {
             btn.style.color = isInList ? 'white' : '#ffd700';
             btn.onclick = (e) => toggleList(e, movieId, listType, !isInList);
             fetchMoviesUser();
-            fetchUserList(listType);
             showToast(data.message, "success");
         } else {
             showToast(data.message || `Failed to ${isInList ? 'remove from' : 'add to'} ${listType}`, "danger");
@@ -343,7 +341,6 @@ async function toggleFavorite(event, movieId, isFavorite) {
             favoriteBtn.onclick = (e) => toggleFavorite(e, movieId, !isFavorite);
             fetchMoviesUser();
             fetchFavorites();
-            fetchUserList(getCurrentListType());
             showToast(data.message, "success");
         } else {
             showToast(data.message || "Failed to update favorites", "danger");
