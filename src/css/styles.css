@@ -51,7 +51,7 @@ body {
 
 .movie-card .custom-tooltip {
     position: absolute;
-    top: -40px;
+    top: 10px;
     left: 50%;
     transform: translateX(-50%);
     background-color: rgba(0, 0, 0, 0.9);
@@ -64,6 +64,7 @@ body {
     transition: opacity 0.3s ease-in-out;
     white-space: nowrap;
     z-index: 10;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .movie-card:hover .custom-tooltip {
@@ -88,7 +89,7 @@ body {
     transition: color 0.3s ease;
 }
 
-.btn-icon:hover, .btn-icon.active {
+.btn-icon:hover {
     color: #ffd700;
 }
 
@@ -98,6 +99,9 @@ body {
     right: 10px;
     font-size: 1rem;
     color: #ffd700;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 2px 6px;
+    border-radius: 3px;
 }
 
 .btn-outline-primary, .btn-outline-success, .btn-outline-danger, .btn-outline-info, .btn-outline-warning {
@@ -114,21 +118,6 @@ body {
 .modal-content {
     border-radius: 10px;
     background-color: #2a2a2a;
-}
-
-.nav-tabs .nav-link {
-    border: none;
-}
-
-.nav-tabs .nav-link.active {
-    background-color: #007bff;
-    color: #fff;
-    border-bottom: 3px solid #fff;
-}
-
-.star-rating {
-    color: #ffd700;
-    font-size: 1.2rem;
 }
 
 .dropdown-menu {

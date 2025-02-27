@@ -23,9 +23,10 @@
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
                             <li><a class="dropdown-item" href="profile.html"><i class="fas fa-user"></i> Profile</a></li>
-                            <li><a class="dropdown-item" href="watchlist.html"><i class="fas fa-eye"></i> Watchlist</a></li>
+                            <li><a class="dropdown-item" href="watchlist.html"><i class="fas fa-bookmark"></i> Watchlist</a></li>
                             <li><a class="dropdown-item" href="watched.html"><i class="fas fa-check"></i> Watched</a></li>
                             <li><a class="dropdown-item" href="dropped.html"><i class="fas fa-times"></i> Dropped</a></li>
+                            <li><a class="dropdown-item" href="favorites.html"><i class="fas fa-star"></i> Favorites</a></li>
                             <li><a class="dropdown-item" href="settings.html"><i class="fas fa-cog"></i> Settings</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><button id="logout-btn" class="dropdown-item btn"><i class="fas fa-sign-out-alt"></i> Logout</button></li>
@@ -45,9 +46,10 @@
         <div class="offcanvas-body">
             <ul class="nav flex-column">
                 <li class="nav-item"><a class="nav-link" href="profile.html"><i class="fas fa-user"></i> Profile</a></li>
-                <li class="nav-item"><a class="nav-link" href="watchlist.html"><i class="fas fa-eye"></i> Watchlist</a></li>
+                <li class="nav-item"><a class="nav-link" href="watchlist.html"><i class="fas fa-bookmark"></i> Watchlist</a></li>
                 <li class="nav-item"><a class="nav-link" href="watched.html"><i class="fas fa-check"></i> Watched</a></li>
                 <li class="nav-item"><a class="nav-link" href="dropped.html"><i class="fas fa-times"></i> Dropped</a></li>
+                <li class="nav-item"><a class="nav-link" href="favorites.html"><i class="fas fa-star"></i> Favorites</a></li>
                 <li class="nav-item"><a class="nav-link" href="settings.html"><i class="fas fa-cog"></i> Settings</a></li>
                 <li><hr class="dropdown-divider"></li>
                 <li><button id="logout-btn-mobile" class="nav-link btn text-start"><i class="fas fa-sign-out-alt"></i> Logout</button></li>
@@ -59,6 +61,8 @@
         <h1 class="display-4 text-center mb-5 fw-bold">Dropped</h1>
         <div id="lists-content" class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4"></div>
     </main>
+
+    <div id="toast-container" class="position-fixed bottom-0 end-0 p-3" style="z-index: 11;"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
     <script src="../js/utils.js"></script>
@@ -86,21 +90,28 @@
                     renderUserList(data.data, listType);
                 } else {
                     listsContent.innerHTML = '<p class="col text-center text-muted">Error fetching list.</p>';
+                    showToast("Error fetching list", "danger");
                 }
             } catch (error) {
                 console.error("Fetch list error:", error);
                 listsContent.innerHTML = '<p class="col text-center text-muted">Error fetching list.</p>';
+                showToast("Error fetching list", "danger");
             }
         }
 
-        function renderUserList(movies, listType) {
+        async function renderUserList(movies, listType) {
             const listsContent = document.getElementById("lists-content");
             listsContent.innerHTML = "";
             if (!movies || movies.length === 0) {
                 listsContent.innerHTML = `<p class="col text-center text-muted">No movies in your ${listType} yet.</p>`;
                 return;
             }
+
+            const favoritesResponse = await fetchWithAuth(`${BASE_URL}/lists?type=favorites`);
+            const favoritesData = await favoritesResponse.json();
+
             const movieElements = movies.map(movie => {
+                const isFavorite = favoritesData.status === "success" && favoritesData.data.some(m => m.movieId === movie.movieId);
                 const listItem = document.createElement("div");
                 listItem.className = "col";
                 listItem.innerHTML = `
@@ -109,8 +120,8 @@
                         <span class="custom-tooltip">${movie.title}</span>
                         <div class="card-body">
                             <div class="actions">
-                                <button onclick="toggleList(${movie.movieId}, '${listType}', true)" class="btn-icon text-white"><i class="fas fa-trash"></i></button>
-                                <button onclick="toggleFavorite(${movie.movieId}, false)" class="btn-icon text-white"><i class="far fa-heart"></i></button>
+                                <button onclick="toggleList(event, ${movie.movieId}, '${listType}', true)" class="btn-icon text-white"><i class="fas fa-trash"></i></button>
+                                <button onclick="toggleFavorite(event, ${movie.movieId}, ${isFavorite})" class="btn-icon" style="color: ${isFavorite ? '#ffd700' : 'white'}"><i class="fas fa-star"></i></button>
                             </div>
                             <div class="rating">${getAverageRating(movie.movieId)}</div>
                         </div>
