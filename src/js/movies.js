@@ -157,6 +157,7 @@ async function showMovieDetails(movie) {
     const description = document.getElementById("movie-description");
     const info = document.getElementById("movie-info");
     const watchlistBtn = document.getElementById("add-watchlist");
+    const watchlistBtnModal = document.getElementById("add-watchlist-modal");
     const watchedBtn = document.getElementById("add-watched");
     const droppedBtn = document.getElementById("add-dropped");
     const favoriteBtn = document.getElementById("add-favorite");
@@ -175,7 +176,8 @@ async function showMovieDetails(movie) {
         const watchlistResponse = await fetchWithAuth(`${BASE_URL}/lists?type=watchlist`, { credentials: "include" });
         const watchlistData = await watchlistResponse.json();
         const isInWatchlist = watchlistData.status === "success" && watchlistData.data.some(m => m.movieId === movie.movieId);
-
+        console.log("==== isInWatchlist ====", isInWatchlist);
+        
         const watchedResponse = await fetchWithAuth(`${BASE_URL}/lists?type=watched`, { credentials: "include" });
         const watchedData = await watchedResponse.json();
         const isWatched = watchedData.status === "success" && watchedData.data.some(m => m.movieId === movie.movieId);
@@ -517,7 +519,7 @@ function getAverageRating(movie) {
     }
     
     const stars = getStarRating(averageRating);
-    return `${stars} (${reviewCount})`;
+    return `${stars}`;
 }
 // Helper function (unchanged)
 function getStarRating(rating) {
