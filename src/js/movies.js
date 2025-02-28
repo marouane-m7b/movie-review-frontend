@@ -66,7 +66,7 @@ async function fetchMoviesUser() {
 
 async function renderMoviesUser(movies) {
     const moviesList = document.getElementById("movies-list");
-    
+
     const watchlistResponse = await fetchWithAuth(`${BASE_URL}/lists?type=watchlist`);
     const watchlistData = await watchlistResponse.json();
     const watchedResponse = await fetchWithAuth(`${BASE_URL}/lists?type=watched`);
@@ -102,7 +102,7 @@ async function renderMoviesUser(movies) {
         movieCard.querySelector('.card-img-top').addEventListener("click", () => showMovieDetails(movie));
         return movieCard;
     });
-    
+
     moviesList.innerHTML = "";
     movieElements.forEach(element => moviesList.appendChild(element));
 }
@@ -130,9 +130,6 @@ async function fetchTopMovies() {
                 col.className = "col-md-2 position-relative"; // Show 6 at a time
                 col.innerHTML = `
                     <img src="${movie.imageUri || 'https://via.placeholder.com/300x400'}" class="d-block w-100" alt="${movie.title}" loading="lazy">
-                    <div class="carousel-caption d-none d-md-block">
-                        <h5>${movie.title}</h5>
-                    </div>
                 `;
                 row.appendChild(col);
             });
@@ -451,13 +448,37 @@ function editReview(reviewId, rating, comment) {
 
 function setupSearch() {
     const searchForm = document.getElementById("search-form");
+    const searchInput = document.getElementById("search-input");
     const clearSearchBtn = document.getElementById("clear-search");
-    if (!searchForm || !clearSearchBtn) return;
+    if (!searchForm || !searchInput || !clearSearchBtn) return;
 
-    searchForm.addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const query = document.getElementById("search-input").value.trim();
-        if (!query) return;
+    searchInput.addEventListener("input", (e) => {
+        clearSearchBtn.style.display = e.target.value ? "block" : "none";
+        debouncedSearch(e.target.value.trim());
+    });
+
+    // Debounce function to limit API calls
+    const debounce = (func, delay) => {
+        let timeoutId;
+        return (...args) => {
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => func.apply(null, args), delay);
+        };
+    };
+
+    // Search handler
+    const handleSearch = async (query) => {
+        if (query.length < 2) { // Require at least 2 characters
+            const isUserPage = window.location.pathname.includes("user.html");
+            isUserPage ? fetchMoviesUser() : fetchMovies();
+            return;
+        }
+
+        if (!query) {
+            const isUserPage = window.location.pathname.includes("user.html");
+            isUserPage ? fetchMoviesUser() : fetchMovies();
+            return;
+        }
 
         try {
             const response = await fetch(`${BASE_URL}/movies/search?q=${encodeURIComponent(query)}`, { credentials: "include" });
@@ -477,12 +498,28 @@ function setupSearch() {
             moviesList.innerHTML = '<p class="col text-center text-muted">Error searching movies.</p>';
             showToast("Error searching movies", "danger");
         }
+    };
+
+    // Debounced search function (waits 300ms after typing stops)
+    const debouncedSearch = debounce(handleSearch, 0); // Slower: 500ms
+    // or
+
+    // Listen for input events
+    searchInput.addEventListener("input", (e) => {
+        const query = e.target.value.trim();
+        debouncedSearch(query);
     });
 
+    // Clear search button
     clearSearchBtn.addEventListener("click", () => {
-        document.getElementById("search-input").value = "";
+        searchInput.value = "";
         const isUserPage = window.location.pathname.includes("user.html");
         isUserPage ? fetchMoviesUser() : fetchMovies();
+    });
+
+    // Optional: Keep form submission prevention
+    searchForm.addEventListener("submit", (e) => {
+        e.preventDefault();
     });
 }
 
