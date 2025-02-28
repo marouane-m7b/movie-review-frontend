@@ -68,7 +68,7 @@ async function fetchMoviesUser() {
     }
 }
 
-async function renderMoviesUser(movies) {
+async function renderMoviesUser(movies, listType) {
     const moviesList = document.getElementById("movies-list");
 
     const sortedMovies = movies.slice().sort((a, b) => b.reviewCount - a.reviewCount);
@@ -98,15 +98,15 @@ async function renderMoviesUser(movies) {
                 <span class="custom-tooltip">${movie.title}</span>
                 <div class="card-body">
                     <div class="actions">
-                        <button onclick="toggleWatchlist(event, ${movie.movieId}, ${isInWatchlist})" class="btn-icon" style="color: ${isInWatchlist ? '#ffd700' : 'white'}"><i class="fas fa-bookmark"></i></button>
-                        <button onclick="toggleList(event, ${movie.movieId}, 'watched', ${isWatched})" class="btn-icon" style="color: ${isWatched ? '#ffd700' : 'white'}"><i class="fas fa-check"></i></button>
-                        <button onclick="toggleList(event, ${movie.movieId}, 'dropped', ${isDropped})" class="btn-icon" style="color: ${isDropped ? '#ffd700' : 'white'}"><i class="fas fa-times"></i></button>
-                        <button onclick="toggleFavorite(event, ${movie.movieId}, ${isFavorite})" class="btn-icon" style="color: ${isFavorite ? '#ffd700' : 'white'}"><i class="fas fa-star"></i></button>
+                        <button onclick="toggleWatchlist(event, ${movie.movieId}, ${isInWatchlist}, '${listType}')" class="btn-icon" style="color: ${isInWatchlist ? '#ffd700' : 'white'}"><i class="fas fa-bookmark"></i></button>
+                        <button onclick="toggleList(event, ${movie.movieId}, 'watched', ${isWatched}, '${listType}')" class="btn-icon" style="color: ${isWatched ? '#ffd700' : 'white'}"><i class="fas fa-check"></i></button>
+                        <button onclick="toggleList(event, ${movie.movieId}, 'dropped', ${isDropped}, '${listType}')" class="btn-icon" style="color: ${isDropped ? '#ffd700' : 'white'}"><i class="fas fa-times"></i></button>
+                        <button onclick="toggleFavorite(event, ${movie.movieId}, ${isFavorite}, '${listType}')" class="btn-icon" style="color: ${isFavorite ? '#ffd700' : 'white'}"><i class="fas fa-star"></i></button>
                     </div>
                 </div>
             </div>
         `;
-        movieCard.querySelector('.card-img-top').addEventListener("click", () => showMovieDetails(movie));
+        movieCard.querySelector('.card-img-top').addEventListener("click", () => showMovieDetails(movie, listType));
         return movieCard;
     });
 
@@ -151,7 +151,8 @@ async function fetchTopMovies() {
     }
 }
 
-async function showMovieDetails(movie) {
+
+async function showMovieDetails(movie, listType) {
     const title = document.getElementById("movie-title");
     const image = document.getElementById("movie-image");
     const description = document.getElementById("movie-description");
@@ -176,7 +177,6 @@ async function showMovieDetails(movie) {
         const watchlistResponse = await fetchWithAuth(`${BASE_URL}/lists?type=watchlist`, { credentials: "include" });
         const watchlistData = await watchlistResponse.json();
         const isInWatchlist = watchlistData.status === "success" && watchlistData.data.some(m => m.movieId === movie.movieId);
-        console.log("==== isInWatchlist ====", isInWatchlist);
         
         const watchedResponse = await fetchWithAuth(`${BASE_URL}/lists?type=watched`, { credentials: "include" });
         const watchedData = await watchedResponse.json();
@@ -191,16 +191,16 @@ async function showMovieDetails(movie) {
         const isFavorite = favoritesData.status === "success" && favoritesData.data.some(m => m.movieId === movie.movieId);
 
         watchlistBtn.style.color = isInWatchlist ? '#ffd700' : 'white';
-        watchlistBtn.onclick = (e) => toggleWatchlist(e, movie.movieId, isInWatchlist);
+        watchlistBtn.onclick = (e) => toggleWatchlist(e, movie.movieId, isInWatchlist, listType);
 
         watchedBtn.style.color = isWatched ? '#ffd700' : 'white';
-        watchedBtn.onclick = (e) => toggleList(e, movie.movieId, "watched", isWatched);
+        watchedBtn.onclick = (e) => toggleList(e, movie.movieId, "watched", isWatched, listType);
 
         droppedBtn.style.color = isDropped ? '#ffd700' : 'white';
-        droppedBtn.onclick = (e) => toggleList(e, movie.movieId, "dropped", isDropped);
+        droppedBtn.onclick = (e) => toggleList(e, movie.movieId, "dropped", isDropped, listType);
 
         favoriteBtn.style.color = isFavorite ? '#ffd700' : 'white';
-        favoriteBtn.onclick = (e) => toggleFavorite(e, movie.movieId, isFavorite);
+        favoriteBtn.onclick = (e) => toggleFavorite(e, movie.movieId, isFavorite, listType);
 
         reviewBtn.onclick = () => {};
         setupReviewForm(movie.movieId);
@@ -268,7 +268,7 @@ function requireAuth() {
     authModal.show();
 }
 
-async function toggleWatchlist(event, movieId, isInWatchlist) {
+async function toggleWatchlist(event, movieId, isInWatchlist, listType) {
     event.stopPropagation(); // Prevent modal trigger
     try {
         const method = isInWatchlist ? "DELETE" : "POST";
@@ -277,8 +277,18 @@ async function toggleWatchlist(event, movieId, isInWatchlist) {
         if (data.status === "success") {
             const watchlistBtn = document.getElementById("add-watchlist");
             watchlistBtn.style.color = isInWatchlist ? 'white' : '#ffd700';
-            watchlistBtn.onclick = (e) => toggleWatchlist(e, movieId, !isInWatchlist);
-            fetchMoviesUser();
+            watchlistBtn.onclick = (e) => toggleWatchlist(e, movieId, !isInWatchlist, listType);
+            if (listType === "watchlist") {
+                fetchUserList("watchlist");
+            } else if (listType === "watched") {
+                fetchUserList("watched");
+            } else if (listType === "dropped") {
+                fetchUserList("dropped");
+            } else if (listType === "favorites") {
+                fetchUserList("favorites");
+            } else {
+                fetchMoviesUser();
+            }
             showToast(data.message, "success");
         } else {
             showToast(data.message || "Failed to update watchlist", "danger");
@@ -289,7 +299,7 @@ async function toggleWatchlist(event, movieId, isInWatchlist) {
     }
 }
 
-async function toggleList(event, movieId, listType, isInList) {
+async function toggleList(event, movieId, listType, isInList, listType2) {
     event.stopPropagation(); // Prevent modal trigger
     try {
         const method = isInList ? "DELETE" : "POST";
@@ -298,8 +308,18 @@ async function toggleList(event, movieId, listType, isInList) {
         if (data.status === "success") {
             const btn = listType === "watched" ? document.getElementById("add-watched") : document.getElementById("add-dropped");
             btn.style.color = isInList ? 'white' : '#ffd700';
-            btn.onclick = (e) => toggleList(e, movieId, listType, !isInList);
-            fetchMoviesUser();
+            btn.onclick = (e) => toggleList(e, movieId, listType, !isInList, listType2);
+            if (listType2 === "watchlist") {
+                fetchUserList("watchlist");
+            } else if (listType2 === "watched") {
+                fetchUserList("watched");
+            } else if (listType2 === "dropped") {
+                fetchUserList("dropped");
+            } else if (listType2 === "favorites") {
+                fetchUserList("favorites");
+            } else {
+                fetchMoviesUser();
+            }
             showToast(data.message, "success");
         } else {
             showToast(data.message || `Failed to ${isInList ? 'remove from' : 'add to'} ${listType}`, "danger");
@@ -310,7 +330,7 @@ async function toggleList(event, movieId, listType, isInList) {
     }
 }
 
-async function toggleFavorite(event, movieId, isFavorite) {
+async function toggleFavorite(event, movieId, isFavorite, listType) {
     event.stopPropagation(); // Prevent modal trigger
     try {
         const method = isFavorite ? "DELETE" : "POST";
@@ -319,9 +339,18 @@ async function toggleFavorite(event, movieId, isFavorite) {
         if (data.status === "success") {
             const favoriteBtn = document.getElementById("add-favorite");
             favoriteBtn.style.color = isFavorite ? 'white' : '#ffd700';
-            favoriteBtn.onclick = (e) => toggleFavorite(e, movieId, !isFavorite);
-            fetchMoviesUser();
-            fetchFavorites();
+            favoriteBtn.onclick = (e) => toggleFavorite(e, movieId, !isFavorite, listType);
+            if (listType === "watchlist") {
+                fetchUserList("watchlist");
+            } else if (listType === "watched") {
+                fetchUserList("watched");
+            } else if (listType === "dropped") {
+                fetchUserList("dropped");
+            } else if (listType === "favorites") {
+                fetchUserList("favorites");
+            } else {
+                fetchMoviesUser();
+            }
             showToast(data.message, "success");
         } else {
             showToast(data.message || "Failed to update favorites", "danger");
@@ -329,6 +358,25 @@ async function toggleFavorite(event, movieId, isFavorite) {
     } catch (error) {
         console.error("Toggle favorite error:", error);
         showToast("Failed to update favorites", "danger");
+    }
+}
+
+async function fetchUserList(listType) {
+    const listsContent = document.getElementById("movies-list");
+    try {
+        const response = await fetchWithAuth(`${BASE_URL}/lists?type=${listType}`);
+        const data = await response.json();
+        console.log("List fetch:", data);
+        if (data.status === "success") {
+            renderMoviesUser(data.data, listType);
+        } else {
+            listsContent.innerHTML = '<p class="col text-center ">Error fetching list.</p>';
+            showToast("Error fetching list", "danger");
+        }
+    } catch (error) {
+        console.error("Fetch list error:", error);
+        listsContent.innerHTML = '<p class="col text-center ">Error fetching list.</p>';
+        showToast("Error fetching list", "danger");
     }
 }
 
@@ -547,54 +595,6 @@ function getCurrentListType() {
     if (path.includes("dropped.html")) return "dropped";
     if (path.includes("favorites.html")) return "favorites";
     return null;
-}
-
-async function fetchFavorites() {
-    const favoritesList = document.getElementById("favorites-list");
-    if (!favoritesList) return;
-
-    try {
-        const response = await fetchWithAuth(`${BASE_URL}/lists?type=favorites`);
-        const data = await response.json();
-        console.log("Favorites fetch:", data);
-        if (data.status === "success" && Array.isArray(data.data)) {
-            renderFavorites(data.data);
-        } else {
-            favoritesList.innerHTML = '<p class="col text-center ">No favorite movies yet.</p>';
-        }
-    } catch (error) {
-        console.error("Fetch favorites error:", error);
-        favoritesList.innerHTML = '<p class="col text-center ">Error loading favorites.</p>';
-        showToast("Error loading favorites", "danger");
-    }
-}
-
-async function renderFavorites(movies) {
-    const favoritesList = document.getElementById("favorites-list");
-    favoritesList.innerHTML = "";
-    if (!movies || movies.length === 0) {
-        favoritesList.innerHTML = '<p class="col text-center ">No favorite movies yet.</p>';
-        return;
-    }
-
-    const movieElements = movies.map(movie => {
-        const movieCard = document.createElement("div");
-        movieCard.className = "col";
-        movieCard.innerHTML = `
-            <div class="card movie-card">
-                <img src="${movie.imageUri || 'https://via.placeholder.com/300x400'}" class="card-img-top" alt="${movie.title}" loading="lazy">
-                <span class="custom-tooltip">${movie.title}</span>
-                <div class="card-body">
-                    <div class="actions">
-                        <button onclick="toggleFavorite(event, ${movie.movieId}, true)" class="btn-icon" style="color: #ffd700"><i class="fas fa-star"></i></button>
-                    </div>
-                    <div class="rating">${getAverageRating(movie)}</div>
-                </div>
-            </div>
-        `;
-        return movieCard;
-    });
-    movieElements.forEach(element => favoritesList.appendChild(element));
 }
 
 // Toast notification function
