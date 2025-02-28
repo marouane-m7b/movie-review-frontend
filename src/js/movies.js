@@ -8,12 +8,12 @@ async function fetchMovies() {
         if (data.status === "success") {
             renderMovies(data.data);
         } else {
-            moviesList.innerHTML = '<p class="col text-center text-muted">Error fetching movies.</p>';
+            moviesList.innerHTML = '<p class="col text-center ">Error fetching movies.</p>';
             showToast("Error fetching movies", "danger");
         }
     } catch (error) {
         console.error("Fetch movies error:", error);
-        moviesList.innerHTML = '<p class="col text-center text-muted">Error fetching movies.</p>';
+        moviesList.innerHTML = '<p class="col text-center ">Error fetching movies.</p>';
         showToast("Error fetching movies", "danger");
     }
 }
@@ -58,12 +58,12 @@ async function fetchMoviesUser() {
         if (data.status === "success") {
             renderMoviesUser(data.data);
         } else {
-            moviesList.innerHTML = '<p class="col text-center text-muted">Error fetching movies.</p>';
+            moviesList.innerHTML = '<p class="col text-center ">Error fetching movies.</p>';
             showToast("Error fetching movies", "danger");
         }
     } catch (error) {
         console.error("Fetch movies error:", error);
-        moviesList.innerHTML = '<p class="col text-center text-muted">Error fetching movies.</p>';
+        moviesList.innerHTML = '<p class="col text-center ">Error fetching movies.</p>';
         showToast("Error fetching movies", "danger");
     }
 }
@@ -172,19 +172,19 @@ async function showMovieDetails(movie) {
 
     const token = getToken();
     if (token) {
-        const watchlistResponse = await fetch(`${BASE_URL}/lists?type=watchlist`, { credentials: "include" });
+        const watchlistResponse = await fetchWithAuth(`${BASE_URL}/lists?type=watchlist`, { credentials: "include" });
         const watchlistData = await watchlistResponse.json();
         const isInWatchlist = watchlistData.status === "success" && watchlistData.data.some(m => m.movieId === movie.movieId);
 
-        const watchedResponse = await fetch(`${BASE_URL}/lists?type=watched`, { credentials: "include" });
+        const watchedResponse = await fetchWithAuth(`${BASE_URL}/lists?type=watched`, { credentials: "include" });
         const watchedData = await watchedResponse.json();
         const isWatched = watchedData.status === "success" && watchedData.data.some(m => m.movieId === movie.movieId);
 
-        const droppedResponse = await fetch(`${BASE_URL}/lists?type=dropped`, { credentials: "include" });
+        const droppedResponse = await fetchWithAuth(`${BASE_URL}/lists?type=dropped`, { credentials: "include" });
         const droppedData = await droppedResponse.json();
         const isDropped = droppedData.status === "success" && droppedData.data.some(m => m.movieId === movie.movieId);
 
-        const favoritesResponse = await fetch(`${BASE_URL}/lists?type=favorites`, { credentials: "include" });
+        const favoritesResponse = await fetchWithAuth(`${BASE_URL}/lists?type=favorites`, { credentials: "include" });
         const favoritesData = await favoritesResponse.json();
         const isFavorite = favoritesData.status === "success" && favoritesData.data.some(m => m.movieId === movie.movieId);
 
@@ -225,11 +225,11 @@ async function refreshReviews(movieId, reviewsList) {
         if (data.status === "success" && Array.isArray(data.data)) {
             renderReviews(data.data, reviewsList);
         } else {
-            reviewsList.innerHTML = '<p class="text-muted">No reviews yet.</p>';
+            reviewsList.innerHTML = '<p class="">No reviews yet.</p>';
         }
     } catch (error) {
         console.error("Fetch reviews error:", error);
-        reviewsList.innerHTML = '<p class="text-muted">Error loading reviews.</p>';
+        reviewsList.innerHTML = '<p class="">Error loading reviews.</p>';
         showToast("Error loading reviews", "danger");
     }
 }
@@ -237,7 +237,7 @@ async function refreshReviews(movieId, reviewsList) {
 function renderReviews(reviews, reviewsList) {
     reviewsList.innerHTML = "<h6>Reviews:</h6>";
     if (!reviews || reviews.length === 0) {
-        reviewsList.innerHTML += '<p class="text-muted">No reviews yet.</p>';
+        reviewsList.innerHTML += '<p class="">No reviews yet.</p>';
         return;
     }
     const currentUserId = getCurrentUserId();
@@ -251,8 +251,8 @@ function renderReviews(reviews, reviewsList) {
             <div class="d-flex justify-content-between align-items-center">
                 <div>
                     <p><strong>${review.username || "Anonymous"}:</strong> ${stars}</p>
-                    <p class="text-muted">${review.comment || "No comment"}</p>
-                    <small class="text-muted">${new Date(review.reviewDate).toLocaleDateString()}</small>
+                    <p class="">${review.comment || "No comment"}</p>
+                    <small class="">${new Date(review.reviewDate).toLocaleDateString()}</small>
                 </div>
                 ${canEdit ? `<button class="btn btn-outline-primary btn-sm" onclick="editReview(${review.reviewId}, ${review.rating}, '${encodeURIComponent(review.comment || '')}')"><i class="fas fa-edit"></i></button>` : ""}
             </div>
@@ -458,13 +458,13 @@ function setupSearch() {
                 isUserPage ? renderMoviesUser(data.data) : renderMovies(data.data);
             } else {
                 const moviesList = document.getElementById("movies-list");
-                moviesList.innerHTML = '<p class="col text-center text-muted">No movies found.</p>';
+                moviesList.innerHTML = '<p class="col text-center ">No movies found.</p>';
                 showToast("No movies found", "warning");
             }
         } catch (error) {
             console.error("Search error:", error);
             const moviesList = document.getElementById("movies-list");
-            moviesList.innerHTML = '<p class="col text-center text-muted">Error searching movies.</p>';
+            moviesList.innerHTML = '<p class="col text-center ">Error searching movies.</p>';
             showToast("Error searching movies", "danger");
         }
     };
@@ -558,11 +558,11 @@ async function fetchFavorites() {
         if (data.status === "success" && Array.isArray(data.data)) {
             renderFavorites(data.data);
         } else {
-            favoritesList.innerHTML = '<p class="col text-center text-muted">No favorite movies yet.</p>';
+            favoritesList.innerHTML = '<p class="col text-center ">No favorite movies yet.</p>';
         }
     } catch (error) {
         console.error("Fetch favorites error:", error);
-        favoritesList.innerHTML = '<p class="col text-center text-muted">Error loading favorites.</p>';
+        favoritesList.innerHTML = '<p class="col text-center ">Error loading favorites.</p>';
         showToast("Error loading favorites", "danger");
     }
 }
@@ -571,7 +571,7 @@ async function renderFavorites(movies) {
     const favoritesList = document.getElementById("favorites-list");
     favoritesList.innerHTML = "";
     if (!movies || movies.length === 0) {
-        favoritesList.innerHTML = '<p class="col text-center text-muted">No favorite movies yet.</p>';
+        favoritesList.innerHTML = '<p class="col text-center ">No favorite movies yet.</p>';
         return;
     }
 

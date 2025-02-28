@@ -67,7 +67,7 @@
                         <input type="file" id="avatar-upload" class="form-control d-none" onchange="uploadAvatar()">
                         <button class="btn btn-outline-primary mb-3" onclick="document.getElementById('avatar-upload').click()"><i class="fas fa-camera"></i> Change Avatar</button>
                         <h3 id="profile-username" class="fw-bold">Loading...</h3>
-                        <p class="text-muted">User ID: <span id="profile-userid">Loading...</span></p>
+                        <p class="">User ID: <span id="profile-userid">Loading...</span></p>
                         <div class="row mt-4">
                             <div class="col-4">
                                 <p><strong>Movies Watched:</strong> <span id="watched-count">0</span></p>
@@ -91,7 +91,7 @@
         </div>
     </main>
 
-    <div id="toast-container" class="position-fixed bottom-0 end-0 p-3" style="z-index: 11;"></div>
+    <div id="toast-container" class="position-fixed bottom-0 end-0 p-3" style="z-index: 9999999;"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
     <script src="../js/utils.js"></script>
