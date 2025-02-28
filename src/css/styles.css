@@ -233,3 +233,8 @@ body {
 #carousel-items .carousel-item {
     display: block;
 }
+
+.star-rating {
+    color: #ffd700; /* Gold color for stars */
+    font-size: 14px;
+}

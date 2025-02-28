@@ -98,11 +98,7 @@
             </div>
         </div>
         <section class="mb-5">
-            <div id="movies-list" class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4"></div>
-        </section>
-        <section>
-            <h2 class="h3 mb-3 fw-bold">Recommended for You</h2>
-            <div id="recommendations" class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4"></div>
+            <div id="movies-list" class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-6 g-4"></div>
         </section>
     </main>
 
@@ -182,7 +178,6 @@
             applyTheme();
             fetchMoviesUser();
             fetchTopMovies();
-            fetchRecommendations();
             setupLogout();
             setupSearch();
             document.getElementById("logout-btn-mobile").addEventListener("click", () => document.getElementById("logout-btn").click());

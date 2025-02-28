@@ -36,7 +36,7 @@ function renderMovies(movies) {
                         <button onclick="requireAuth()" class="btn-icon text-white"><i class="fas fa-times"></i></button>
                         <button onclick="requireAuth()" class="btn-icon text-white"><i class="fas fa-star"></i></button>
                     </div>
-                    <div class="rating">${getAverageRating(movie.movieId)}</div>
+                    <div class="rating">${getAverageRating(movie)}</div>
                 </div>
             </div>
         `;
@@ -76,11 +76,12 @@ async function renderMoviesUser(movies) {
     const favoritesResponse = await fetchWithAuth(`${BASE_URL}/lists?type=favorites`);
     const favoritesData = await favoritesResponse.json();
 
-    const movieElements = movies.map(movie => {
+    const movieElementsPromises = movies.map(async movie => {
         const isInWatchlist = watchlistData.status === "success" && watchlistData.data.some(m => m.movieId === movie.movieId);
         const isWatched = watchedData.status === "success" && watchedData.data.some(m => m.movieId === movie.movieId);
         const isDropped = droppedData.status === "success" && droppedData.data.some(m => m.movieId === movie.movieId);
         const isFavorite = favoritesData.status === "success" && favoritesData.data.some(m => m.movieId === movie.movieId);
+        const rating = await getAverageRating(movie.movieId); // Await the rating
 
         const movieCard = document.createElement("div");
         movieCard.className = "col";
@@ -103,6 +104,7 @@ async function renderMoviesUser(movies) {
         return movieCard;
     });
 
+    const movieElements = await Promise.all(movieElementsPromises); // Resolve all promises
     moviesList.innerHTML = "";
     movieElements.forEach(element => moviesList.appendChild(element));
 }
@@ -139,46 +141,6 @@ async function fetchTopMovies() {
         }
     } catch (error) {
         console.error("Fetch top movies error:", error);
-    }
-}
-
-
-async function fetchRecommendations() {
-    const recommendationsList = document.getElementById("recommendations");
-    if (!recommendationsList) return;
-
-    try {
-        const response = await fetch(`${BASE_URL}/movies`, { credentials: "include" });
-        const data = await response.json();
-        if (data.status === "success") {
-            const recommended = data.data.slice(0, 4);
-            const movieElements = recommended.map(movie => {
-                const movieCard = document.createElement("div");
-                movieCard.className = "col";
-                movieCard.innerHTML = `
-                    <div class="card movie-card" data-movie-id="${movie.movieId}">
-                        <img src="${movie.imageUri || 'https://via.placeholder.com/300x400'}" class="card-img-top" alt="${movie.title}" loading="lazy">
-                        <span class="custom-tooltip">${movie.title}</span>
-                        <div class="card-body">
-                            <div class="actions">
-                                <button onclick="toggleWatchlist(event, ${movie.movieId}, false)" class="btn-icon text-white"><i class="fas fa-bookmark"></i></button>
-                                <button onclick="toggleList(event, ${movie.movieId}, 'watched', false)" class="btn-icon text-white"><i class="fas fa-check"></i></button>
-                                <button onclick="toggleList(event, ${movie.movieId}, 'dropped', false)" class="btn-icon text-white"><i class="fas fa-times"></i></button>
-                                <button onclick="toggleFavorite(event, ${movie.movieId}, false)" class="btn-icon text-white"><i class="fas fa-star"></i></button>
-                            </div>
-                            <div class="rating">${getAverageRating(movie.movieId)}</div>
-                        </div>
-                    </div>
-                `;
-                movieCard.querySelector('.card-img-top').addEventListener("click", () => showMovieDetails(movie));
-                return movieCard;
-            });
-            movieElements.forEach(element => recommendationsList.appendChild(element));
-        }
-    } catch (error) {
-        console.error("Fetch recommendations error:", error);
-        recommendationsList.innerHTML = '<p class="col text-center text-muted">Error loading recommendations.</p>';
-        showToast("Error loading recommendations", "danger");
     }
 }
 
@@ -539,8 +501,36 @@ function filterMovies(key, value) {
         });
 }
 
-function getAverageRating(movieId) {
-    return "★★★★☆"; // Placeholder
+function getAverageRating(movie) {
+    
+    console.log(movie);
+    const averageRating = movie.averageRating || 0;
+    const reviewCount = movie.reviewCount || 0;
+    
+    if (reviewCount === 0) {
+        return "No ratings yet";
+    }
+    
+    const stars = getStarRating(averageRating);
+    return `${stars} (${reviewCount})`;
+}
+// Helper function (unchanged)
+function getStarRating(rating) {
+    const fullStar = '<i class="fas fa-star star-rating"></i>';
+    const halfStar = '<i class="fas fa-star-half-alt star-rating"></i>';
+    const emptyStar = '<i class="far fa-star star-rating"></i>';
+    let stars = '';
+    
+    for (let i = 1; i <= 5; i++) {
+        if (rating >= i) {
+            stars += fullStar;
+        } else if (rating >= i - 0.5) {
+            stars += halfStar;
+        } else {
+            stars += emptyStar;
+        }
+    }
+    return stars;
 }
 
 function getCurrentListType() {
