@@ -25,8 +25,10 @@ function renderMovies(movies) {
         movieCard.className = "col";
         movieCard.innerHTML = `
             <div class="card movie-card">
-                <img src="${movie.imageUri || 'https://via.placeholder.com/300x400'}" class="card-img-top" alt="${movie.title}" loading="lazy">
-                <span class="custom-tooltip">${movie.title}</span>
+                <div class="poster-wrapper">
+                    <img src="${movie.imageUri || 'https://via.placeholder.com/300x400'}" class="card-img-top" alt="${movie.title}" loading="lazy">
+                    <span class="custom-tooltip">${movie.title}</span>
+                </div>
                 <div class="card-body">
                     <div class="actions">
                         <button onclick="requireAuth()" class="btn-icon text-white"><i class="fas fa-bookmark"></i></button>
@@ -106,32 +108,43 @@ async function renderMoviesUser(movies) {
 }
 
 async function fetchTopMovies() {
-    const carouselItems = document.getElementById("carousel-items");
-    if (!carouselItems) return;
+    const carouselInner = document.getElementById("carousel-items");
+    if (!carouselInner) return;
 
     try {
         const response = await fetch(`${BASE_URL}/movies`, { credentials: "include" });
         const data = await response.json();
+
         if (data.status === "success") {
-            const topMovies = data.data.slice(0, 5);
-            const items = topMovies.map((movie, index) => {
-                const item = document.createElement("div");
-                item.className = `carousel-item ${index === 0 ? 'active' : ''}`;
-                item.innerHTML = `
-                    <img src="${movie.imageUri || 'https://via.placeholder.com/1200x400'}" class="d-block w-100" alt="${movie.title}" loading="lazy">
+            const topMovies = data.data;
+
+            // Create a single carousel item with a row containing all movies
+            const item = document.createElement("div");
+            item.className = "carousel-item active"; // Ensure it's the active one
+
+            const row = document.createElement("div");
+            row.className = "row flex-nowrap overflow-hidden"; // Ensure continuous scrolling
+
+            topMovies.forEach(movie => {
+                const col = document.createElement("div");
+                col.className = "col-md-2 position-relative"; // Show 6 at a time
+                col.innerHTML = `
+                    <img src="${movie.imageUri || 'https://via.placeholder.com/300x400'}" class="d-block w-100" alt="${movie.title}" loading="lazy">
                     <div class="carousel-caption d-none d-md-block">
                         <h5>${movie.title}</h5>
-                        <p>${movie.description || "No description available"}</p>
                     </div>
                 `;
-                return item;
+                row.appendChild(col);
             });
-            items.forEach(item => carouselItems.appendChild(item));
+
+            item.appendChild(row);
+            carouselInner.appendChild(item);
         }
     } catch (error) {
         console.error("Fetch top movies error:", error);
     }
 }
+
 
 async function fetchRecommendations() {
     const recommendationsList = document.getElementById("recommendations");

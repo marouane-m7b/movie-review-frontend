@@ -83,3 +83,13 @@ function applyTheme() {
         });
     }
 }
+
+document.querySelector(".carousel-control-next").addEventListener("click", function () {
+    const row = document.querySelector("#carousel-items .row");
+    row.scrollBy({ left: row.clientWidth / 6, behavior: "smooth" });
+});
+
+document.querySelector(".carousel-control-prev").addEventListener("click", function () {
+    const row = document.querySelector("#carousel-items .row");
+    row.scrollBy({ left: -row.clientWidth / 6, behavior: "smooth" });
+});

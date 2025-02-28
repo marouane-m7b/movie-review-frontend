@@ -13,8 +13,8 @@ body {
 
 .movie-card {
     position: relative;
-    height: 400px;
-    overflow: hidden;
+    /* height: 300px; */
+    overflow: visible;
     border: none;
     transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
     cursor: pointer;
@@ -47,28 +47,6 @@ body {
     background: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent);
     padding: 10px;
     color: #fff;
-}
-
-.movie-card .custom-tooltip {
-    position: absolute;
-    top: 10px;
-    left: 50%;
-    transform: translateX(-50%);
-    background-color: rgba(0, 0, 0, 0.9);
-    color: #fff;
-    padding: 8px 12px;
-    border-radius: 5px;
-    font-size: 1.2rem;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.3s ease-in-out;
-    white-space: nowrap;
-    z-index: 10;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-}
-
-.movie-card:hover .custom-tooltip {
-    opacity: 1;
 }
 
 .actions {
@@ -151,4 +129,107 @@ body {
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1; transform: translateY(0); }
+}
+
+/* Adjust movie card width in carousel */
+.carousel-item .col-md-2 {
+    padding: 5px; /* Add some spacing */
+}
+
+/* Adjust image height in carousel */
+.carousel-item img {
+    height: 200px; /* Set a fixed height for images */
+    object-fit: cover; /* Ensure images fill the space without distortion */
+}
+
+/* Adjust movie card width in movie listing */
+.movie-card {
+    width: 100%; /* Ensure cards take up the full column width */
+}
+
+/* Custom CSS for Carousel (in styles.css) */
+.carousel-item-width {
+    width: calc(100% / 6); /* Each item takes up 1/6 of the carousel width */
+    flex-shrink: 0; /* Prevent items from shrinking */
+    transition: transform 0.3s ease; /* Add smooth transition */
+}
+
+.carousel-inner {
+    display: flex; /* Use flexbox to display items in a row */
+}
+
+/* In styles.css */
+.image-container {
+    position: relative;
+}
+
+.movie-title-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background-color: rgba(0, 0, 0, 0.7); /* Semi-transparent background */
+    color: white;
+    padding: 5px;
+    text-align: center;
+    font-size: 14px;
+}
+
+.movie-card {
+    position: relative;
+}
+
+.poster-wrapper {
+    position: relative;
+}
+
+.custom-tooltip {
+    position: absolute;
+    top: -30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(176, 176, 176, 0.9);
+    color: #fff;
+    padding: 0px 5px;
+    border-radius: 5px;
+    font-size: 1rem;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease-in-out;
+    white-space: nowrap;
+    z-index: 12;
+}
+
+/* Triangle arrow */
+.custom-tooltip::after {
+    content: '';
+    position: absolute;
+    bottom: -5px; /* Adjust based on your preference */
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 6px solid rgba(176, 176, 176, 0.9);
+}
+
+.movie-card:hover .custom-tooltip {
+    opacity: 1;
+}
+
+/* Ensure the image doesn't overflow */
+.card-img-top {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+#carousel-items .row {
+    display: flex;
+    transition: transform 0.5s ease-in-out;
+}
+
+#carousel-items .carousel-item {
+    display: block;
 }
