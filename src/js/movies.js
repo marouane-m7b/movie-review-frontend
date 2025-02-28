@@ -20,11 +20,15 @@ async function fetchMovies() {
 
 function renderMovies(movies) {
     const moviesList = document.getElementById("movies-list");
-    const movieElements = movies.map(movie => {
+
+    const sortedMovies = movies.slice().sort((a, b) => b.reviewCount - a.reviewCount);
+
+    const movieElements = sortedMovies.map(movie => {
         const movieCard = document.createElement("div");
         movieCard.className = "col";
         movieCard.innerHTML = `
             <div class="card movie-card">
+                <div class="rating">${getAverageRating(movie)}</div>
                 <div class="poster-wrapper">
                     <img src="${movie.imageUri || 'https://via.placeholder.com/300x400'}" class="card-img-top" alt="${movie.title}" loading="lazy">
                     <span class="custom-tooltip">${movie.title}</span>
@@ -36,12 +40,12 @@ function renderMovies(movies) {
                         <button onclick="requireAuth()" class="btn-icon text-white"><i class="fas fa-times"></i></button>
                         <button onclick="requireAuth()" class="btn-icon text-white"><i class="fas fa-star"></i></button>
                     </div>
-                    <div class="rating">${getAverageRating(movie)}</div>
                 </div>
             </div>
         `;
         return movieCard;
     });
+
     moviesList.innerHTML = "";
     movieElements.forEach(element => moviesList.appendChild(element));
 }
@@ -67,6 +71,8 @@ async function fetchMoviesUser() {
 async function renderMoviesUser(movies) {
     const moviesList = document.getElementById("movies-list");
 
+    const sortedMovies = movies.slice().sort((a, b) => b.reviewCount - a.reviewCount);
+
     const watchlistResponse = await fetchWithAuth(`${BASE_URL}/lists?type=watchlist`);
     const watchlistData = await watchlistResponse.json();
     const watchedResponse = await fetchWithAuth(`${BASE_URL}/lists?type=watched`);
@@ -76,18 +82,19 @@ async function renderMoviesUser(movies) {
     const favoritesResponse = await fetchWithAuth(`${BASE_URL}/lists?type=favorites`);
     const favoritesData = await favoritesResponse.json();
 
-    const movieElementsPromises = movies.map(async movie => {
+    const movieElementsPromises = sortedMovies.map(async movie => {
         const isInWatchlist = watchlistData.status === "success" && watchlistData.data.some(m => m.movieId === movie.movieId);
         const isWatched = watchedData.status === "success" && watchedData.data.some(m => m.movieId === movie.movieId);
         const isDropped = droppedData.status === "success" && droppedData.data.some(m => m.movieId === movie.movieId);
         const isFavorite = favoritesData.status === "success" && favoritesData.data.some(m => m.movieId === movie.movieId);
-        const rating = await getAverageRating(movie.movieId); // Await the rating
+        const rating = await getAverageRating(movie); // Await the rating
 
         const movieCard = document.createElement("div");
         movieCard.className = "col";
         movieCard.innerHTML = `
             <div class="movie-card" data-movie-id="${movie.movieId}">
                 <img src="${movie.imageUri || 'https://via.placeholder.com/300x400'}" class="card-img-top" alt="${movie.title}" loading="lazy">
+                <div class="rating">${getAverageRating(movie)}</div>
                 <span class="custom-tooltip">${movie.title}</span>
                 <div class="card-body">
                     <div class="actions">
@@ -96,7 +103,6 @@ async function renderMoviesUser(movies) {
                         <button onclick="toggleList(event, ${movie.movieId}, 'dropped', ${isDropped})" class="btn-icon" style="color: ${isDropped ? '#ffd700' : 'white'}"><i class="fas fa-times"></i></button>
                         <button onclick="toggleFavorite(event, ${movie.movieId}, ${isFavorite})" class="btn-icon" style="color: ${isFavorite ? '#ffd700' : 'white'}"><i class="fas fa-star"></i></button>
                     </div>
-                    <div class="rating">${getAverageRating(movie.movieId)}</div>
                 </div>
             </div>
         `;
@@ -132,6 +138,7 @@ async function fetchTopMovies() {
                 col.className = "col-md-2 position-relative"; // Show 6 at a time
                 col.innerHTML = `
                     <img src="${movie.imageUri || 'https://via.placeholder.com/300x400'}" class="d-block w-100" alt="${movie.title}" loading="lazy">
+                    <div class="rating">${getAverageRating(movie)}</div>
                 `;
                 row.appendChild(col);
             });
@@ -502,9 +509,7 @@ function filterMovies(key, value) {
 }
 
 function getAverageRating(movie) {
-    
-    console.log(movie);
-    const averageRating = movie.averageRating || 0;
+        const averageRating = movie.averageRating || 0;
     const reviewCount = movie.reviewCount || 0;
     
     if (reviewCount === 0) {
@@ -581,7 +586,7 @@ async function renderFavorites(movies) {
                     <div class="actions">
                         <button onclick="toggleFavorite(event, ${movie.movieId}, true)" class="btn-icon" style="color: #ffd700"><i class="fas fa-star"></i></button>
                     </div>
-                    <div class="rating">${getAverageRating(movie.movieId)}</div>
+                    <div class="rating">${getAverageRating(movie)}</div>
                 </div>
             </div>
         `;

@@ -80,6 +80,7 @@ body {
     background: rgba(0, 0, 0, 0.7);
     padding: 2px 6px;
     border-radius: 3px;
+    z-index: 12;
 }
 
 .btn-outline-primary, .btn-outline-success, .btn-outline-danger, .btn-outline-info, .btn-outline-warning {
