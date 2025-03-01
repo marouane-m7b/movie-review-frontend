@@ -242,13 +242,48 @@ function renderReviews(reviews, reviewsList) {
         reviewsList.innerHTML += '<p class="">No reviews yet.</p>';
         return;
     }
-    const currentUserId = getCurrentUserId();
+
+    const currentUserId = getCurrentUserId(); // Assuming this function returns the logged-in user's ID
     console.log("Current user ID:", currentUserId);
+
+    // Separate the current user's review (if it exists) from the others
+    let userReview = null;
+    const otherReviews = [];
+    
     reviews.forEach(review => {
+        if (currentUserId && review.userId === currentUserId) {
+            userReview = review; // Store the user's review
+        } else {
+            otherReviews.push(review); // Add other reviews to a separate array
+        }
+    });
+
+    // Render the user's review first (if it exists)
+    if (userReview) {
+        const userReviewItem = document.createElement("div");
+        userReviewItem.className = "border-top pt-2 mt-2"; // Optional: Add a background to highlight the user's review
+        const stars = '<i class="fas fa-star star-rating"></i>'.repeat(userReview.rating) + 
+                     '<i class="far fa-star star-rating"></i>'.repeat(5 - userReview.rating);
+        userReviewItem.innerHTML = `
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <p><strong>${userReview.username || "You"}:</strong> ${stars}</p>
+                    <p class="">${userReview.comment || "No comment"}</p>
+                    <small class="">${new Date(userReview.reviewDate).toLocaleDateString()}</small>
+                </div>
+                <button class="btn btn-outline-primary btn-sm" onclick="editReview(${userReview.reviewId}, ${userReview.rating}, '${encodeURIComponent(userReview.comment || '')}')"><i class="fas fa-edit"></i></button>
+            </div>
+        `;
+        reviewsList.appendChild(userReviewItem);
+    }
+
+    // Render the remaining reviews
+    otherReviews.forEach(review => {
         const reviewItem = document.createElement("div");
         reviewItem.className = "border-top pt-2 mt-2";
-        const canEdit = currentUserId && review.userId === currentUserId;
-        const stars = '<i class="fas fa-star star-rating"></i>'.repeat(review.rating) + '<i class="far fa-star star-rating"></i>'.repeat(5 - review.rating);
+        const canEdit = currentUserId && review.userId === currentUserId; // This should always be false here, but kept for safety
+        const stars = '<i class="fas fa-star star-rating"></i>'.repeat(review.rating) + 
+                     '<i class="far fa-star star-rating"></i>'.repeat(5 - review.rating);
         reviewItem.innerHTML = `
             <div class="d-flex justify-content-between align-items-center">
                 <div>
