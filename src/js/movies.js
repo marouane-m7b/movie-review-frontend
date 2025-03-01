@@ -530,7 +530,7 @@ function setupSearch() {
     if (!searchForm || !searchInput || !clearSearchBtn) return;
 
     searchInput.addEventListener("input", (e) => {
-        clearSearchBtn.style.display = e.target.value ? "block" : "none";
+        clearSearchBtn.style.display = e.target.value ? "block !important" : "none!important";
         debouncedSearch(e.target.value.trim());
     });
 
@@ -578,7 +578,7 @@ function setupSearch() {
     };
 
     // Debounced search function (waits 300ms after typing stops)
-    const debouncedSearch = debounce(handleSearch, 0); // Slower: 500ms
+    const debouncedSearch = debounce(handleSearch, 300); // Slower: 500ms
     // or
 
     // Listen for input events
