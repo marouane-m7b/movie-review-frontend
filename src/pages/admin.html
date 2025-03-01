@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-bs-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,6 +7,53 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     <link href="../../css/styles.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #1a1a1a;
+            color: #f0f0f0;
+        }
+        .navbar-dark {
+            background-color: #2d2d2d !important;
+        }
+        .card {
+            background-color: #2d2d2d;
+            border: 1px solid #404040;
+        }
+        .form-control {
+            background-color: #333333;
+            border-color: #404040;
+            color: #f0f0f0;
+        }
+        .form-control::placeholder {
+            color: #999999;
+        }
+        .form-control:focus {
+            background-color: #333333;
+            border-color: #666666;
+            color: #f0f0f0;
+            box-shadow: 0 0 0 0.25rem rgba(108, 117, 125, 0.25);
+        }
+        .movie-card:hover {
+            background-color: #383838;
+            transition: background-color 0.2s;
+        }
+        .btn-success {
+            background-color: #198754;
+            border-color: #198754;
+        }
+        .btn-success:hover {
+            background-color: #157347;
+            border-color: #146c43;
+        }
+        .btn-danger {
+            background-color: #dc3545;
+            border-color: #dc3545;
+        }
+        .btn-danger:hover {
+            background-color: #bb2d3b;
+            border-color: #b02a37;
+        }
+    </style>
 </head>
 <body>
     <!-- Navbar -->
@@ -59,6 +106,8 @@
         </section>
     </main>
 
+    <div id="toast-container" class="position-fixed bottom-0 end-0 p-3" style="z-index: 9999999;"></div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
     <script src="../../js/utils.js"></script>
     <script src="../../js/auth.js"></script>
@@ -73,6 +122,25 @@
             setupAddMovie();
             setupLogout();
         });
+
+        function showToast(message, type) {
+            const toastContainer = document.getElementById("toast-container");
+            const toast = document.createElement("div");
+            toast.className = `toast align-items-center text-white bg-${type} border-0`;
+            toast.setAttribute("role", "alert");
+            toast.setAttribute("aria-live", "assertive");
+            toast.setAttribute("aria-atomic", "true");
+            toast.innerHTML = `
+                <div class="d-flex">
+                    <div class="toast-body">${message}</div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            `;
+            toastContainer.appendChild(toast);
+            const bsToast = new bootstrap.Toast(toast);
+            bsToast.show();
+            setTimeout(() => toast.remove(), 3000); // Auto-remove after 3 seconds
+        }
 
         async function fetchMoviesAdmin() {
             const moviesList = document.getElementById("movies-list");
@@ -101,7 +169,6 @@
                         <img src="${movie.imageUri}" class="card-img-top" alt="${movie.title}">
                         <div class="card-body">
                             <h5 class="card-title">${movie.title}</h5>
-                            <p class="card-text ">${movie.description || "No description available"}</p>
                             <p class="card-text"><small class="">Year: ${movie.releaseYear} | Genre: ${movie.genre || "N/A"}</small></p>
                             <button onclick="deleteMovie(${movie.movieId})" class="btn btn-danger btn-sm mt-2">Delete</button>
                         </div>
@@ -128,12 +195,13 @@
                     const data = await response.json();
                     if (data.status === "success") {
                         fetchMoviesAdmin();
+                        showToast("Movie added successfully!", "success");
                         addMovieForm.reset();
                     } else {
                         alert(data.message);
                     }
                 } catch (error) {
-                    console.error("Add movie error:", error);
+                    showToast("Failed to add movie", "danger");
                     alert("Failed to add movie.");
                 }
             });
@@ -149,11 +217,12 @@
                 const data = await response.json();
                 if (data.status === "success") {
                     fetchMoviesAdmin();
+                    showToast("Movie deleted successfully!", "success");
                 } else {
                     alert(data.message);
                 }
             } catch (error) {
-                console.error("Delete movie error:", error);
+                showToast("Failed to delete movie", "danger");
                 alert("Failed to delete movie.");
             }
         }
