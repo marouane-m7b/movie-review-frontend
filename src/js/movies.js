@@ -243,58 +243,59 @@ function renderReviews(reviews, reviewsList) {
         return;
     }
 
-    const currentUserId = getCurrentUserId(); // Assuming this function returns the logged-in user's ID
+    const currentUserId = getCurrentUserId();
     console.log("Current user ID:", currentUserId);
 
-    // Separate the current user's review (if it exists) from the others
-    let userReview = null;
+    const userReviews = [];  // Changed to array to store multiple user reviews
     const otherReviews = [];
     
     reviews.forEach(review => {
         if (currentUserId && review.userId === currentUserId) {
-            userReview = review; // Store the user's review
+            userReviews.push(review);  // Collect all reviews from current user
         } else {
-            otherReviews.push(review); // Add other reviews to a separate array
+            otherReviews.push(review);
         }
     });
 
-    // Render the user's review first (if it exists)
-    if (userReview) {
-        const userReviewItem = document.createElement("div");
-        userReviewItem.className = "border-top pt-2 mt-2"; // Optional: Add a background to highlight the user's review
-        const stars = '<i class="fas fa-star star-rating"></i>'.repeat(userReview.rating) + 
-                     '<i class="far fa-star star-rating"></i>'.repeat(5 - userReview.rating);
-        userReviewItem.innerHTML = `
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <p><strong>${userReview.username || "You"}:</strong> ${stars}</p>
-                    <p class="">${userReview.comment || "No comment"}</p>
-                    <small class="">${new Date(userReview.reviewDate).toLocaleDateString()}</small>
-                </div>
-                <button class="btn btn-outline-primary btn-sm" onclick="editReview(${userReview.reviewId}, ${userReview.rating}, '${encodeURIComponent(userReview.comment || '')}')"><i class="fas fa-edit"></i></button>
-            </div>
-        `;
-        reviewsList.appendChild(userReviewItem);
-    }
-
-    // Render the remaining reviews
-    otherReviews.forEach(review => {
+    const createReviewItem = (review, isUserReview = false) => {
         const reviewItem = document.createElement("div");
-        reviewItem.className = "border-top pt-2 mt-2";
-        const canEdit = currentUserId && review.userId === currentUserId; // This should always be false here, but kept for safety
-        const stars = '<i class="fas fa-star star-rating"></i>'.repeat(review.rating) + 
-                     '<i class="far fa-star star-rating"></i>'.repeat(5 - review.rating);
+        reviewItem.className = `border-top pt-2 mt-2`;
+        const canEdit = currentUserId && review.userId === currentUserId;
+        
+        const stars = getStarRating(review.rating); // Use the helper function
         reviewItem.innerHTML = `
             <div class="d-flex justify-content-between align-items-center">
                 <div>
-                    <p><strong>${review.username || "Anonymous"}:</strong> ${stars}</p>
+                    <p><strong>${review.username || (isUserReview ? "You" : "Anonymous")}:</strong> ${stars}</p>
                     <p class="">${review.comment || "No comment"}</p>
                     <small class="">${new Date(review.reviewDate).toLocaleDateString()}</small>
                 </div>
-                ${canEdit ? `<button class="btn btn-outline-primary btn-sm" onclick="editReview(${review.reviewId}, ${review.rating}, '${encodeURIComponent(review.comment || '')}')"><i class="fas fa-edit"></i></button>` : ""}
+                ${
+                    canEdit ? `
+                        <div class="dropdown">
+                            <button class="btn btn-outline-secondary btn-sm" type="button" id="dropdownMenuButton${review.reviewId}" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                            <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton${review.reviewId}">
+                                <li><a class="dropdown-item" href="#" onclick="editReview(${review.reviewId}, ${review.rating}, '${encodeURIComponent(review.comment || '')}'); return false;">Edit</a></li>
+                                <li><a class="dropdown-item text-danger" href="#" onclick="deleteReview(${review.reviewId}, ${review.movieId}); return false;">Delete</a></li>
+                            </ul>
+                        </div>
+                    ` : ""
+                }
             </div>
         `;
-        reviewsList.appendChild(reviewItem);
+        return reviewItem;
+    };
+
+    // Render all user reviews first
+    userReviews.forEach(review => {
+        reviewsList.appendChild(createReviewItem(review, true));
+    });
+
+    // Then render other reviews
+    otherReviews.forEach(review => {
+        reviewsList.appendChild(createReviewItem(review));
     });
 }
 
@@ -498,6 +499,28 @@ function editReview(reviewId, rating, comment) {
     editRating.value = rating;
     editComment.value = decodeURIComponent(comment);
     editForm.classList.add("show");
+}
+
+async function deleteReview(reviewId, movieId) {
+    if (!confirm("Are you sure you want to delete this review?")) return;
+
+    try {
+        const response = await fetchWithAuth(`${BASE_URL}/reviews?review_id=${reviewId}`, {
+            method: "DELETE"
+        });
+        const data = await response.json();
+        console.log("Review deletion response:", data);
+        if (data.status === "success") {
+            showToast("Review deleted successfully!", "success");
+            const reviewsList = document.getElementById("reviews-list");
+            await refreshReviews(movieId, reviewsList);
+        } else {
+            showToast(data.message || "Failed to delete review", "danger");
+        }
+    } catch (error) {
+        console.error("Delete review error:", error);
+        showToast("Failed to delete review", "danger");
+    }
 }
 
 function setupSearch() {
