@@ -239,3 +239,7 @@ body {
     color: #ffd700; /* Gold color for stars */
     font-size: 14px;
 }
+
+#search-input::placeholder {
+    color: rgb(103, 103, 103);
+}
