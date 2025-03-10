@@ -56,7 +56,6 @@
     </style>
 </head>
 <body>
-    <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
             <a class="navbar-brand" href="../index.html">JJReviews</a>
@@ -65,8 +64,15 @@
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <button id="logout-btn" class="btn btn-danger">Logout</button>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-user-circle"></i> Admin
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="adminDropdown">
+                            <li><a class="dropdown-item" href="/pages/user.html"><i class="fas fa-user"></i> Be a User</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><button id="logout-btn" class="dropdown-item btn"><i class="fas fa-sign-out-alt"></i> Logout</button></li>
+                        </ul>
                     </li>
                 </ul>
             </div>
@@ -121,7 +127,25 @@
             fetchMoviesAdmin();
             setupAddMovie();
             setupLogout();
+            checkUserRole();
         });
+
+        async function checkUserRole() {
+            const token = getToken();
+            try {
+                const response = await fetch(`${BASE_URL}/profile`, {
+                    headers: { "Authorization": `Bearer ${token}` },
+                    credentials: "include"
+                });
+                const data = await response.json();
+                if (data.status !== "success" || !data.data.isAdmin) {
+                    window.location.href = "../index.html"; // Redirect if not admin
+                }
+            } catch (error) {
+                console.error("Error checking role:", error);
+                window.location.href = "../index.html";
+            }
+        }
 
         function showToast(message, type) {
             const toastContainer = document.getElementById("toast-container");

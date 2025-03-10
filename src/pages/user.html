@@ -23,6 +23,7 @@
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
                             <li><a class="dropdown-item" href="profile.html"><i class="fas fa-user"></i> Profile</a></li>
+                            <li id="admin-switch" class="d-none"><a class="dropdown-item" href="/pages/admin.html"><i class="fas fa-user-shield"></i> Be Admin</a></li>
                             <li><a class="dropdown-item" href="watchlist.html"><i class="fas fa-bookmark"></i> Watchlist</a></li>
                             <li><a class="dropdown-item" href="watched.html"><i class="fas fa-check"></i> Watched</a></li>
                             <li><a class="dropdown-item" href="dropped.html"><i class="fas fa-times"></i> Dropped</a></li>
@@ -161,7 +162,24 @@
             setupLogout();
             setupSearch();
             document.getElementById("logout-btn-mobile").addEventListener("click", () => document.getElementById("logout-btn").click());
+            checkUserRole();
         });
+
+        async function checkUserRole() {
+            const token = getToken();
+            try {
+                const response = await fetch(`${BASE_URL}/profile`, {
+                    headers: { "Authorization": `Bearer ${token}` },
+                    credentials: "include"
+                });
+                const data = await response.json();
+                if (data.status === "success" && data.data.isAdmin) {
+                    document.getElementById("admin-switch").classList.remove("d-none"); // Show "Be Admin" if admin
+                }
+            } catch (error) {
+                console.error("Error checking role:", error);
+            }
+        }
     </script>
 </body>
 </html>
