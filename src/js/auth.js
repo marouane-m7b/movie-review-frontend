@@ -114,12 +114,12 @@ async function checkUserRoleAndRedirect() {
             window.location.href = redirectUrl;
         } else {
             console.log("Profile fetch failed, clearing token");
-            clearToken();
+            // clearToken();
             window.location.href = "/index.html";
         }
     } catch (error) {
         console.error("Error checking role:", error);
-        clearToken();
+        // clearToken();
         window.location.href = "/index.html";
     }
 }
